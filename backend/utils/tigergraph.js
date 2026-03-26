@@ -6,31 +6,22 @@
 // ================================================================
 const axios = require('axios');
 
-const BASE  = `${process.env.TG_HOST}:${process.env.TG_PORT}/restpp`;
+const BASE = `${process.env.TG_BASE_URL}/restpp`;
 const GRAPH = process.env.TG_GRAPH || 'SafeRouteGraph';
 
 // Axios instance with auth
 const tg = axios.create({
   baseURL: BASE,
-  headers: { 'Content-Type': 'application/json' }
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${process.env.TG_TOKEN}`
+  }
 });
 
-// ── Auth token (TigerGraph uses bearer token) ─────────────────────
-let _token = null;
-async function getToken() {
-  if (_token) return _token;
-  const res = await axios.post(
-    `${process.env.TG_HOST}:${process.env.TG_PORT}/requesttoken`,
-    { secret: process.env.TG_SECRET }
-  );
-  _token = res.data.results.token;
-  tg.defaults.headers['Authorization'] = `Bearer ${_token}`;
-  return _token;
-}
+
 
 // ── GET single Intersection vertex ───────────────────────────────
 async function getIntersection(intersectionId) {
-  await getToken();
   const res = await tg.get(
     `/graph/${GRAPH}/vertices/Intersection/${intersectionId}`
   );
@@ -39,14 +30,12 @@ async function getIntersection(intersectionId) {
 
 // ── GET all Intersections ─────────────────────────────────────────
 async function getAllIntersections() {
-  await getToken();
   const res = await tg.get(`/graph/${GRAPH}/vertices/Intersection`);
   return res.data.results;
 }
 
 // ── GET SafetyFeatures connected to an Intersection ───────────────
 async function getFeaturesForIntersection(intersectionId) {
-  await getToken();
   // Uses the HAS_FEATURE edge in the graph
   const res = await tg.get(
     `/graph/${GRAPH}/edges/Intersection/${intersectionId}/HAS_FEATURE`
@@ -56,7 +45,6 @@ async function getFeaturesForIntersection(intersectionId) {
 
 // ── GET current TimeSlice vertex ──────────────────────────────────
 async function getCurrentTimeSlice() {
-  await getToken();
   const now = new Date();
   const hour = String(now.getHours()).padStart(2, '0');
   const date = now.toISOString().split('T')[0];
@@ -70,7 +58,6 @@ async function getCurrentTimeSlice() {
 // ── GET SafeRoute via GSQL installed query ────────────────────────
 // Group A will install a GSQL query called 'getSafeRoute'
 async function getSafeRoute(startId, endId) {
-  await getToken();
   const res = await tg.get(
     `/query/${GRAPH}/getSafeRoute`,
     { params: { start: startId, end: endId } }
@@ -80,7 +67,6 @@ async function getSafeRoute(startId, endId) {
 
 // ── GET Cluster by ID ─────────────────────────────────────────────
 async function getCluster(clusterId) {
-  await getToken();
   const res = await tg.get(
     `/graph/${GRAPH}/vertices/SafetyCluster/${clusterId}`
   );
@@ -89,7 +75,6 @@ async function getCluster(clusterId) {
 
 // ── GET all Incidents ─────────────────────────────────────────────
 async function getAllIncidents(verifiedOnly = false) {
-  await getToken();
   const res = await tg.get(
     `/graph/${GRAPH}/vertices/IncidentReport`
   );
@@ -102,7 +87,6 @@ async function getAllIncidents(verifiedOnly = false) {
 
 // ── POST new IncidentReport vertex ────────────────────────────────
 async function createIncident(incidentData) {
-  await getToken();
   const res = await tg.post(
     `/graph/${GRAPH}`,
     {

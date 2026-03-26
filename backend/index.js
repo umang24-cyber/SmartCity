@@ -34,6 +34,4 @@ app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
   console.log(`Data source: ${process.env.DATA_SOURCE}`);
 });
-
-const cors = require("cors");
-app.use(cors());
+
