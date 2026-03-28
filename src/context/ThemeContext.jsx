@@ -3,15 +3,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext();
 
 export const themes = [
+  { id: 'submarine', name: 'Submarine Green', color: '#00ff88' },
+  { id: 'midnight-green', name: 'Midnight Green', color: '#10b981' },
   { id: 'midnight-neon', name: 'Midnight Neon', color: '#3b82f6' },
-  { id: 'emerald-city', name: 'Emerald City', color: '#10b981' },
   { id: 'solar-flare', name: 'Solar Flare', color: '#f59e0b' },
   { id: 'cyber-orchid', name: 'Cyber Orchid', color: '#a855f7' },
-  { id: 'steel-horizon', name: 'Steel Horizon', color: '#475569' },
 ];
 
 export const ThemeProvider = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState('midnight-neon');
+  const [currentTheme, setCurrentTheme] = useState('submarine');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const changeTheme = (newTheme) => {

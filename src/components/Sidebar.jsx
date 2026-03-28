@@ -1,33 +1,115 @@
 import React from 'react';
-import { Map, ShieldAlert, Activity, Zap } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
-export default function Sidebar({ activeTab, onTabChange }) {
-  const icons = [
-    { id: 'Map', icon: Map, label: 'Map' },
-    { id: 'Alerts', icon: ShieldAlert, label: 'Alerts' },
-    { id: 'Stats', icon: Activity, label: 'Stats' },
-    { id: 'Power', icon: Zap, label: 'Power' },
-  ];
+const TABS = [
+  { id: 'SONAR',    icon: '◎', label: 'SONAR MAP' },
+  { id: 'DANGER',   icon: '⚠', label: 'DANGER SCORE' },
+  { id: 'THREATS',  icon: '⬡', label: 'INCIDENTS' },
+  { id: 'INTEL',    icon: '▤', label: 'ANALYTICS' },
+  { id: 'ROUTE',    icon: '→', label: 'SAFE ROUTE' },
+  { id: 'SECTOR',   icon: '◈', label: 'CLUSTER INFO' },
+  { id: 'DISPATCH', icon: '✦', label: 'DISPATCH' },
+];
+
+export default function Sidebar({ activeTab, onTabChange, threatCount = 0 }) {
+  const { currentTheme, changeTheme, themes } = useTheme();
 
   return (
-    <div className="w-16 flex flex-col items-center py-6 gap-8 glass rounded-r-2xl h-full border-r border-white/5 relative z-50">
-      <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent-glow animate-pulse">
-        <Zap className="text-white w-6 h-6" />
+    <aside style={{
+      width: 200,
+      flexShrink: 0,
+      background: 'rgba(2, 10, 20, 0.97)',
+      borderRight: '1px solid var(--border)',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      zIndex: 50,
+    }}>
+      {/* Logo slot */}
+      <div style={{
+        padding: '1rem 1rem 0.75rem',
+        borderBottom: '1px solid var(--border)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+      }}>
+        <div className="led led-green pulse-green" />
+        <span className="label-xs" style={{ color: 'var(--accent)', letterSpacing: '0.2em' }}>NAVIGATION</span>
       </div>
-      <div className="flex flex-col gap-6 flex-1">
-        {icons.map(({ id, icon: Icon, label }) => (
-          <button 
-            key={id} 
-            onClick={() => onTabChange(id)}
-            className={`p-3 rounded-xl transition-all duration-300 group relative ${activeTab === id ? 'text-accent bg-accent/10 shadow-[0_0_15px_rgba(var(--accent-rgb),0.3)]' : 'text-text-secondary hover:text-accent hover:bg-white/5'}`}
-          >
-            <Icon className="w-6 h-6" />
-            <span className="absolute left-16 bg-bg-secondary backdrop-blur px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10 z-[100]">
-              {label}
-            </span>
-          </button>
-        ))}
+
+      {/* Nav tabs */}
+      <nav style={{ flex: 1, padding: '0.5rem 0', overflowY: 'auto' }}>
+        {TABS.map(({ id, icon, label }) => {
+          const isActive = activeTab === id;
+          const isAlert = id === 'THREATS' && threatCount > 0;
+          return (
+            <button
+              key={id}
+              onClick={() => onTabChange(id)}
+              className={`sidebar-btn ${isActive ? 'active' : ''}`}
+            >
+              <span style={{
+                fontSize: '0.85rem',
+                color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                width: 18,
+                flexShrink: 0,
+                textAlign: 'center',
+                transition: 'color 0.2s',
+              }}>
+                {icon}
+              </span>
+              <span style={{ flex: 1 }}>{label}</span>
+              {isAlert && (
+                <span style={{
+                  background: 'var(--red-alert)',
+                  color: '#030d18',
+                  fontSize: '0.55rem',
+                  fontWeight: 700,
+                  padding: '1px 5px',
+                  borderRadius: 2,
+                  animation: 'pulse-amber 1.5s infinite',
+                }}>
+                  {threatCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Theme Picker */}
+      <div style={{ padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', flexShrink: 0 }}>
+        <div className="label-xs" style={{ fontSize: '0.55rem' }}>THEME CALIBRATION</div>
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          {themes.map(t => (
+            <button
+              key={t.id}
+              onClick={() => changeTheme(t.id)}
+              title={t.name}
+              style={{
+                width: 14, height: 14, borderRadius: 2,
+                background: t.color, cursor: 'pointer',
+                border: currentTheme === t.id ? `1px solid #fff` : `1px solid transparent`,
+                boxShadow: currentTheme === t.id ? `0 0 6px ${t.color}` : 'none',
+                opacity: currentTheme === t.id ? 1 : 0.4,
+                transition: 'all 0.2s'
+              }}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* Footer */}
+      <div style={{
+        padding: '0.75rem 1rem',
+        borderTop: '1px solid var(--border)',
+      }}>
+        <div className="label-xs" style={{ lineHeight: 1.8 }}>
+          <div>SECTOR: CBD-01</div>
+          <div>NODE: BANGALORE</div>
+          <div style={{ color: 'var(--accent)' }}>STATUS: <span className="blink">ACTIVE</span></div>
+        </div>
+      </div>
+    </aside>
   );
 }

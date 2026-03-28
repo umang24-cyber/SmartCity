@@ -1,118 +1,207 @@
 import React from 'react';
-import Sidebar from './Sidebar';
 import Header from './Header';
+import Sidebar from './Sidebar';
 import Explorer from './Explorer';
 import { SafetyVariance, PeakDangerHours } from './Analytics';
 import ReportForm from './ReportForm';
+import DangerPanel from './DangerPanel';
+import IncidentsPanel from './IncidentsPanel';
+import SafeRoutePanel from './SafeRoutePanel';
+import ClusterPanel from './ClusterPanel';
 import { useTigerGraph } from '../hooks/useTigerGraph';
 
+const PanelHeader = ({ title, subtitle, badge }) => (
+  <div style={{ padding: '0.85rem 1rem 0', marginBottom: '0.75rem', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+    <div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.72rem', color: 'var(--accent)', letterSpacing: '0.18em' }}>{title}</div>
+      {subtitle && <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: 2 }}>{subtitle}</div>}
+    </div>
+    {badge && (
+      <span style={{
+        fontFamily: 'var(--font-mono)', fontSize: '0.58rem', letterSpacing: '0.12em',
+        padding: '2px 8px', border: '1px solid var(--accent)', color: 'var(--accent)', background: 'rgba(0,255,136,0.06)',
+      }}>
+        {badge}
+      </span>
+    )}
+  </div>
+);
+
 export default function Dashboard() {
-  const { data, isLoading } = useTigerGraph();
-  const [activeTab, setActiveTab] = React.useState('Map');
+  const {
+    data, danger, incidents, safeRoute, cluster,
+    backendOnline, isLoading,
+    selectedIntersection, setSelectedIntersection,
+    selectedWeather, setSelectedWeather,
+    verifiedOnly, setVerifiedOnly,
+    refresh,
+  } = useTigerGraph();
+
+  const [activeTab, setActiveTab] = React.useState('SONAR');
 
   if (isLoading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-bg-primary">
-        <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin shadow-lg shadow-accent-glow" />
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: '50%',
+            border: '2px solid var(--accent)', borderTopColor: 'transparent',
+            animation: 'spin 0.8s linear infinite',
+          }} />
+          <div className="label-xs" style={{ color: 'var(--accent)' }}>INITIALIZING SYSTEMS...</div>
+        </div>
       </div>
     );
   }
 
+  const unverifiedCount = incidents.filter(i => !i.verified).length;
+
   const renderContent = () => {
     switch (activeTab) {
-      case 'Map':
+      case 'SONAR':
         return (
-          <>
-            {/* Main Visualization - Explorer */}
-            <div className="col-span-12 lg:col-span-8 row-span-4 min-h-[420px]">
-              <Explorer nodes={data.nodes} edges={data.edges} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gridTemplateRows: 'auto auto', gap: '1rem', height: '100%' }}>
+            {/* Main map */}
+            <div style={{ gridRow: '1 / 3', minHeight: 420 }}>
+              <Explorer
+                nodes={data.nodes}
+                edges={data.edges}
+                intersectionName={danger?.meta?.intersection_name}
+              />
             </div>
 
-            {/* Side Info - Risk Matrix */}
-            <div className="col-span-12 lg:col-span-4 row-span-2 glass rounded-2xl p-5 border border-white/5 overflow-hidden flex flex-col">
-                  <h3 className="font-bold text-sm text-text-secondary uppercase tracking-widest mb-3">Risk Matrix</h3>
-                  <div className="flex flex-col gap-3 flex-1 justify-center">
-                      {data.primary_risk_factors.slice(0, 2).map(factor => (
-                          <div key={factor} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5 hover:border-accent/40 transition-colors cursor-default">
-                             <span className="text-xs font-medium">{factor}</span>
-                             <span className="text-[10px] font-black text-accent bg-accent/10 px-2 py-0.5 rounded">HIGH</span>
-                          </div>
-                      ))}
-                      <div className="mt-1">
-                          <div className="flex justify-between text-[10px] font-bold uppercase text-text-secondary mb-1">
-                              <span>Isolation Score</span>
-                              <span className="text-accent">{data.isolation_score * 100}%</span>
-                          </div>
-                          <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                              <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${data.isolation_score * 100}%` }} />
-                          </div>
-                      </div>
+            {/* Risk matrix */}
+            <div className="panel panel-cut" style={{ padding: '1rem' }}>
+              <div className="label-xs" style={{ color: 'var(--amber)', marginBottom: '0.6rem' }}>⬡ ACTIVE RISK FACTORS</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {(danger?.warnings?.length > 0 ? danger.warnings : data.primary_risk_factors).slice(0, 4).map((f, i) => (
+                  <div key={i} style={{
+                    padding: '0.4rem 0.6rem', border: '1px solid var(--border)',
+                    background: 'rgba(255,170,0,0.04)', borderLeft: '2px solid var(--amber)',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-primary)', lineHeight: 1.4,
+                  }}>
+                    {f}
                   </div>
+                ))}
+                {data.primary_risk_factors.length === 0 && (
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                    NO ACTIVE THREATS
+                  </div>
+                )}
+                {/* Isolation score */}
+                <div style={{ marginTop: '0.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span className="label-xs">ISOLATION INDEX</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--accent)' }}>
+                      {((danger?.meta?.isolation_score ?? data.isolation_score) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div style={{ height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 1 }}>
+                    <div style={{
+                      height: 2, width: `${(danger?.meta?.isolation_score ?? data.isolation_score) * 100}%`,
+                      background: 'var(--accent)', boxShadow: '0 0 6px var(--accent)',
+                      transition: 'width 1s ease',
+                    }} />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Form - Reporting */}
-            <div className="col-span-12 lg:col-span-4 row-span-2">
+            {/* Dispatch mini */}
+            <div style={{ position: 'relative' }}>
               <ReportForm />
             </div>
+          </div>
+        );
 
-            {/* Graphs - Analytics */}
-            <div className="col-span-12 lg:col-span-6 row-span-2 min-h-[200px]">
+      case 'DANGER':
+        return (
+          <DangerPanel
+            danger={danger}
+            selectedIntersection={selectedIntersection}
+            setSelectedIntersection={setSelectedIntersection}
+            selectedWeather={selectedWeather}
+            setSelectedWeather={setSelectedWeather}
+          />
+        );
+
+      case 'THREATS':
+        return (
+          <IncidentsPanel
+            incidents={incidents}
+            verifiedOnly={verifiedOnly}
+            setVerifiedOnly={setVerifiedOnly}
+          />
+        );
+
+      case 'INTEL':
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '1rem', height: '100%' }}>
+            <div style={{ gridColumn: '1 / 3' }}>
               <SafetyVariance data={data.variance} />
             </div>
-            <div className="col-span-12 lg:col-span-6 row-span-2 min-h-[200px]">
+            <div style={{ gridColumn: '1 / 3' }}>
               <PeakDangerHours data={data.peak_hours} />
             </div>
-          </>
-        );
-      case 'Alerts':
-        return (
-          <div className="col-span-12 glass rounded-2xl p-8 border border-white/5 h-full">
-            <h2 className="text-2xl font-bold mb-4">Security Alerts Feed</h2>
-            <div className="flex flex-col gap-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold">Unverified Incident - Sector {i}</h4>
-                    <p className="text-sm text-text-secondary">Reported 5 mins ago • Priority High</p>
-                  </div>
-                  <button className="bg-accent/20 text-accent px-4 py-2 rounded-lg font-bold hover:bg-accent/30 transition-colors">Acknowledge</button>
-                </div>
-              ))}
-            </div>
           </div>
         );
-      case 'Stats':
+
+      case 'ROUTE':
+        return <SafeRoutePanel safeRoute={safeRoute} />;
+
+      case 'SECTOR':
+        return <ClusterPanel cluster={cluster} />;
+
+      case 'DISPATCH':
         return (
-          <div className="col-span-12 grid grid-cols-12 gap-6 h-full">
-             <div className="col-span-12 lg:col-span-6 glass rounded-2xl p-6 border border-white/5">
-                <SafetyVariance data={data.variance} />
-             </div>
-             <div className="col-span-12 lg:col-span-6 glass rounded-2xl p-6 border border-white/5">
-                <PeakDangerHours data={data.peak_hours} />
-             </div>
+          <div style={{ maxWidth: 460, margin: '0 auto', height: '100%', position: 'relative' }}>
+            <ReportForm />
           </div>
         );
-      case 'Power':
-        return (
-          <div className="col-span-12 glass rounded-2xl p-8 border border-white/5 h-full flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                <div className="w-12 h-12 bg-accent rounded-full" />
-              </div>
-              <h2 className="text-3xl font-black mb-2 uppercase tracking-tighter italic">Grid Status: Stable</h2>
-              <p className="text-text-secondary max-w-md">All municipal power grids are operating within normal parameters. No outages detected in Sector 7.</p>
-          </div>
-        );
+
+      default:
+        return null;
     }
   };
 
   return (
-    <div className="flex h-screen bg-bg-primary text-text-primary font-sans overflow-hidden">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header safetyScore={data.safety_score} />
-        
-        <main className="flex-1 px-6 pb-6 pt-0 grid grid-cols-12 auto-rows-min gap-6 overflow-y-auto overflow-x-hidden glass-scroll scroll-smooth">
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-primary)', overflow: 'hidden', position: 'relative' }}>
+      {/* Hex bg & scanlines */}
+      <div className="hex-bg" />
+      <div className="scanlines" />
+      <div className="vignette" />
+
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} threatCount={unverifiedCount} />
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+        <Header
+          safetyScore={data.safety_score}
+          backendOnline={backendOnline}
+          intersectionName={danger?.meta?.intersection_name}
+          onRefresh={refresh}
+        />
+
+        {/* Tab breadcrumb */}
+        <div style={{
+          padding: '0.4rem 1.25rem',
+          borderBottom: '1px solid var(--border)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.6rem',
+          color: 'var(--text-secondary)',
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+        }}>
+          <span>SMARTCITY</span>
+          <span style={{ color: 'var(--border)' }}>›</span>
+          <span style={{ color: 'var(--accent)' }}>{activeTab}</span>
+          <div style={{ flex: 1 }} />
+          <span className="blink-slow" style={{ color: 'rgba(0,255,136,0.4)' }}>●</span>
+          <span style={{ color: 'rgba(0,255,136,0.4)' }}>LIVE</span>
+        </div>
+
+        <main style={{ flex: 1, padding: '1rem', overflow: 'auto', display: 'flex', flexDirection: 'column' }} className="fade-in" key={activeTab}>
           {renderContent()}
         </main>
       </div>
