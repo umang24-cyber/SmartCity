@@ -1,0 +1,30 @@
+# ═══════════════════════════════════════════════════════════════════
+# requirements.txt — B4 NLP FastAPI Service
+# Smart City Women's Safety System — TigerGraph Hackathon
+# ═══════════════════════════════════════════════════════════════════
+#
+# Install:   pip install -r requirements.txt
+# spaCy model (run once after pip install):
+#            python -m spacy download en_core_web_sm
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Web framework ────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.6.0
+
+# ── NLP / ML core ────────────────────────────────────────────────
+transformers>=4.40.0
+torch>=2.2.0                  # CPU build is fine; no torchvision needed
+spacy>=3.7.0
+scikit-learn>=1.4.0
+numpy>=1.26.0
+
+# ── Utilities ────────────────────────────────────────────────────
+langdetect>=1.0.9             # optional language detection (graceful fallback if absent)
+python-multipart>=0.0.9       # needed for FastAPI form/file uploads (future use)
+
+# ── Dev / testing (optional — comment out for minimal production image) ──
+# httpx>=0.27.0               # async test client for pytest
+# pytest>=8.1.0
+# pytest-asyncio>=0.23.0

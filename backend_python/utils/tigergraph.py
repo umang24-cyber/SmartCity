@@ -8,7 +8,7 @@ import os
 import httpx
 from typing import Any, Dict, List, Optional
 
-TG_BASE_URL = os.getenv("TG_BASE_URL", "").rstrip("/").replace(":9000", "")
+TG_BASE_URL = os.getenv("TG_BASE_URL", "")
 TG_GRAPH = os.getenv("TG_GRAPH", "SafeRouteGraph")
 TG_TOKEN = os.getenv("TG_TOKEN", "")
 
