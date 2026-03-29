@@ -14,9 +14,14 @@ exports.getClusterInfo = async (req, res) => {
 
     let cluster;
 
-    if (process.env.DATA_SOURCE === 'tigergraph') {
+    if (req.dataSource === 'tigergraph') {
       // ── TIGERGRAPH PATH ──────────────────────────────────────────
       const raw = await tg.getCluster(cluster_id || 1);
+      
+      if (!raw) {
+        return res.status(404).json({ error: 'Cluster not found in TigerGraph' });
+      }
+
       cluster = raw.attributes;
     } else {
       // ── MOCK PATH ────────────────────────────────────────────────

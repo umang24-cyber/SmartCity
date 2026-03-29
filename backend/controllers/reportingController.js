@@ -7,7 +7,13 @@ const VALID_TYPES = ['poor_lighting', 'felt_followed', 'broken_cctv', 'suspiciou
 
 exports.postReport = async (req, res) => {
   try {
-    const { lat, lng, incident_type, severity, source = 'user_report' } = req.body;
+    // ── Input Format Check (CSV support) ──────────────────────────
+    let data = req.body;
+    if (req.headers['content-type'] === 'text/csv' || req.headers['content-type'] === 'text/plain') {
+      const { csvToJson } = require('../utils/csvUtil');
+      data = csvToJson(req.body.toString()); 
+    }
+    const { lat, lng, incident_type, severity, source = 'user_report' } = data;
 
     // ── Validation ────────────────────────────────────────────────
     if (!lat || !lng) {
@@ -34,7 +40,7 @@ exports.postReport = async (req, res) => {
       lng:          parseFloat(lng)
     };
 
-    if (process.env.DATA_SOURCE === 'tigergraph') {
+    if (req.dataSource === 'tigergraph') {
       // ── TIGERGRAPH PATH ──────────────────────────────────────────
       // Creates IncidentReport vertex + edge to nearest Intersection
       await tg.createIncident(incident);
@@ -42,13 +48,39 @@ exports.postReport = async (req, res) => {
       // ── MOCK PATH ────────────────────────────────────────────────
       reportStore.push(incident);
       console.log('[Report received]', incident);
+
+      // ── Explainable AI / Immediate Normalization (Mock Influence) ──
+      const { mockClusters } = require('../data/mockData');
+      const cluster = mockClusters.find(c =>
+        incident.lat >= c.min_latitude && incident.lat <= c.max_latitude &&
+        incident.lng >= c.min_longitude && incident.lng <= c.max_longitude
+      );
+      
+      if (cluster) {
+        // Degrade aggregate safety proportionally to severity
+        cluster.avg_cluster_safety = Math.max(0, cluster.avg_cluster_safety - (incident.severity * 2));
+        if (!cluster.primary_risk_factors.includes(incident.incident_type)) {
+          cluster.primary_risk_factors.push(incident.incident_type);
+        }
+        console.log(`[Influence] Updated SafetyCluster ${cluster.cluster_id}. New Score: ${cluster.avg_cluster_safety}`);
+      }
     }
 
-    res.status(201).json({
+    const response = {
       success: true,
       message: 'Incident reported successfully',
       incident_id: incident.incident_id
-    });
+    };
+
+    // ── CSV Output Support ──────────────────────────────────────────
+    if (req.query.format === 'csv') {
+      const { jsonToCsv } = require('../utils/csvUtil');
+      const csvData = jsonToCsv([response]);
+      res.setHeader('Content-Type', 'text/csv');
+      return res.send(csvData);
+    }
+
+    res.status(201).json(response);
   } catch (err) {
     console.error('[postReport]', err.message);
     res.status(500).json({ error: 'Failed to save report' });

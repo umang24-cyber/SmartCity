@@ -4,15 +4,22 @@ const cors = require('cors');
 
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: '*' }));
 app.use(express.json());
+app.use(express.text({ type: ['text/csv', 'text/plain'] }));
+
+// ── Global Context Middleware ─────────────────────────────
+app.use((req, res, next) => {
+  req.dataSource = req.headers['x-data-source'] || process.env.DATA_SOURCE || 'mock';
+  next();
+});
 
 // ── Routes ──────────────────────────────────────────────
-app.use('/safe-route',    require('./routes/safeRoute'));
-app.use('/danger-score',  require('./routes/dangerScore'));
-app.use('/incidents',     require('./routes/incidents'));
-app.use('/report',        require('./routes/report'));
-app.use('/cluster-info',  require('./routes/clusterInfo'));
+app.use('/safe-route',    require('./routes/routePainter'));
+app.use('/danger-score',  require('./routes/safetyScorecard'));
+app.use('/incidents',     require('./routes/dynamicHeatmap'));
+app.use('/report',        require('./routes/incidentReporting'));
+app.use('/cluster-info',  require('./routes/comfortDashboard'));
 
 // ── Health check ─────────────────────────────────────────
 app.get('/health', (req, res) => {

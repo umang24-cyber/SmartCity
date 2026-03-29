@@ -4,10 +4,11 @@ import Header from './Header';
 import Explorer from './Explorer';
 import { SafetyVariance, PeakDangerHours } from './Analytics';
 import ReportForm from './ReportForm';
+import ExplainablePanel from './ExplainablePanel';
 import { useTigerGraph } from '../hooks/useTigerGraph';
 
 export default function Dashboard() {
-  const { data, isLoading } = useTigerGraph();
+  const { data, isLoading, refresh } = useTigerGraph();
   const [activeTab, setActiveTab] = React.useState('Map');
 
   if (isLoading) {
@@ -25,14 +26,19 @@ export default function Dashboard() {
           <>
             {/* Main Visualization - Explorer */}
             <div className="col-span-12 lg:col-span-8 row-span-4 min-h-[420px]">
-              <Explorer nodes={data.nodes} edges={data.edges} />
+              <Explorer route={data.route} incidents={data.incidents} />
             </div>
 
             {/* Side Info - Risk Matrix */}
-            <div className="col-span-12 lg:col-span-4 row-span-2 glass rounded-2xl p-5 border border-white/5 overflow-hidden flex flex-col">
-                  <h3 className="font-bold text-sm text-text-secondary uppercase tracking-widest mb-3">Risk Matrix</h3>
-                  <div className="flex flex-col gap-3 flex-1 justify-center">
-                      {data.primary_risk_factors.slice(0, 2).map(factor => (
+            <div className="col-span-12 lg:col-span-4 row-span-2 glass flex flex-col gap-4 rounded-2xl p-5 border border-white/5 overflow-y-auto">
+                  <h3 className="font-bold text-sm text-text-secondary uppercase tracking-widest">Risk Matrix</h3>
+                  
+                  {data.reasoning && (
+                    <ExplainablePanel reasoning={data.reasoning} themeAction={data.themeAction} />
+                  )}
+
+                  <div className="flex flex-col gap-3 flex-1 justify-center mt-2">
+                      {(data.primary_risk_factors || []).slice(0, 2).map(factor => (
                           <div key={factor} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5 hover:border-accent/40 transition-colors cursor-default">
                              <span className="text-xs font-medium">{factor}</span>
                              <span className="text-[10px] font-black text-accent bg-accent/10 px-2 py-0.5 rounded">HIGH</span>
@@ -41,7 +47,7 @@ export default function Dashboard() {
                       <div className="mt-1">
                           <div className="flex justify-between text-[10px] font-bold uppercase text-text-secondary mb-1">
                               <span>Isolation Score</span>
-                              <span className="text-accent">{data.isolation_score * 100}%</span>
+                              <span className="text-accent">{Math.round(data.isolation_score * 100)}%</span>
                           </div>
                           <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
                               <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${data.isolation_score * 100}%` }} />
@@ -52,7 +58,7 @@ export default function Dashboard() {
 
             {/* Form - Reporting */}
             <div className="col-span-12 lg:col-span-4 row-span-2">
-              <ReportForm />
+              <ReportForm refreshData={refresh} />
             </div>
 
             {/* Graphs - Analytics */}

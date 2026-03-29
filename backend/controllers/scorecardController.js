@@ -13,13 +13,18 @@ exports.getDangerScore = async (req, res) => {
 
     let intersection, features, timeSlice;
 
-    if (process.env.DATA_SOURCE === 'tigergraph') {
+    if (req.dataSource === 'tigergraph') {
       // ── TIGERGRAPH PATH ──────────────────────────────────────────
       [intersection, features, timeSlice] = await Promise.all([
         tg.getIntersection(intersection_id),
         tg.getFeaturesForIntersection(intersection_id),
         tg.getCurrentTimeSlice()
       ]);
+
+      if (!intersection) {
+        return res.status(404).json({ error: 'Intersection not found in TigerGraph' });
+      }
+
       // Normalize TigerGraph response shape to flat object
       intersection = intersection.attributes;
       features = features.map(f => f.attributes);
@@ -34,6 +39,22 @@ exports.getDangerScore = async (req, res) => {
 
     // ── computeSafetyScore works on both real and mock data ────────
     const result = computeSafetyScore(intersection, timeSlice, features);
+
+    // ── CSV Output Support ──────────────────────────────────────────
+    if (req.query.format === 'csv') {
+      const { jsonToCsv } = require('../utils/csvUtil');
+      // Flatten the result for CSV
+      const flatResult = {
+        score: result.score,
+        risk: result.risk,
+        reasoning: result.reasoning,
+        themeAction: result.themeAction,
+        ...result.meta
+      };
+      const csvData = jsonToCsv([flatResult]);
+      res.setHeader('Content-Type', 'text/csv');
+      return res.send(csvData);
+    }
 
     res.json(result);
   } catch (err) {

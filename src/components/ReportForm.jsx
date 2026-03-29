@@ -1,13 +1,34 @@
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 
-export default function ReportForm() {
-  const [report, setReport] = useState({ type: 'Lighting', severity: 3, description: '' });
+export default function ReportForm({ refreshData }) {
+  const [report, setReport] = useState({ type: 'poor_lighting', severity: 3, description: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Incident Reported:', report);
-    setReport({ type: 'Lighting', severity: 3, description: '' });
+    setIsSubmitting(true);
+
+    try {
+      // Create CSV payload as requested by user in previous messages
+      // Schema: lat,lng,incident_type,severity,source
+      // Hardcoding a center coordinate for simplicity since there's no map picker
+      const csvPayload = `lat,lng,incident_type,severity,source\n12.9716,77.5946,${report.type},${report.severity},frontend_ui`;
+
+      await fetch('http://localhost:5000/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/csv', 'x-data-source': 'mock' },
+        body: csvPayload
+      });
+
+      console.log('Incident Dispatched!');
+      setReport({ type: 'poor_lighting', severity: 3, description: '' });
+      if (refreshData) refreshData(); // Trigger Live Feed update
+    } catch (err) {
+      console.error('Failed to dispatch report:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -22,10 +43,10 @@ export default function ReportForm() {
               onChange={e => setReport({...report, type: e.target.value})}
               className="w-full bg-white/5 border border-white/10 rounded-lg p-1.5 text-xs focus:border-accent outline-none transition-colors"
             >
-              <option value="Lighting">Lighting</option>
-              <option value="CCTV">CCTV</option>
-              <option value="Footfall">Crowd</option>
-              <option value="Traffic">Transit</option>
+              <option value="poor_lighting">Poor Lighting</option>
+              <option value="broken_cctv">Broken CCTV</option>
+              <option value="suspicious_activity">Suspicious Activity</option>
+              <option value="felt_followed">Felt Followed</option>
             </select>
           </div>
 

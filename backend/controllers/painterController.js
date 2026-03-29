@@ -8,11 +8,15 @@ exports.getSafeRoute = async (req, res) => {
 
     let routeData;
 
-    if (process.env.DATA_SOURCE === 'tigergraph') {
+    if (req.dataSource === 'tigergraph') {
       // ── TIGERGRAPH PATH ──────────────────────────────────────────
       // Group A installs GSQL query 'getSafeRoute' that returns
       // ordered intersection list avoiding high-isolation, peak-danger nodes
       routeData = await tg.getSafeRoute(start, end);
+
+      if (!routeData) {
+        return res.status(404).json({ error: 'Safe route not found in TigerGraph' });
+      }
     } else {
       // ── MOCK PATH ────────────────────────────────────────────────
       const timeSlice = getCurrentTimeSlice();
@@ -30,6 +34,21 @@ exports.getSafeRoute = async (req, res) => {
             ]
           : mockSafeRoute.reason
       };
+    }
+
+    // ── Data Contract Alignment ─────────────────────────────────────
+    // Frontend Mapbox-ready component expects an ordered array of coordinates
+    if (routeData && Array.isArray(routeData.route)) {
+        // Based on prompt exact spec [[lat, lng]]
+        routeData.coordinates = routeData.route.map(node => [node.lat, node.lng]);
+    }
+
+    // ── CSV Output Support ──────────────────────────────────────────
+    if (req.query.format === 'csv') {
+      const { jsonToCsv } = require('../utils/csvUtil');
+      const csvData = jsonToCsv(routeData.route); // Return the intersection list as CSV
+      res.setHeader('Content-Type', 'text/csv');
+      return res.send(csvData);
     }
 
     res.json(routeData);

@@ -1,75 +1,115 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import Map, { Source, Layer, Marker } from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
-export default function Explorer({ nodes, edges }) {
+// You will need to provide a Mapbox token either via env var or prop
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiYmFyZGFpIiwiYSI6ImNsbzh2YzF3cTBibmwya21zMjA3dDBtYTQifQ.R6hH2bT1Q2x_b_V8aA_ZLQ';  // Fallback demo token or use process.env.VITE_MAPBOX_TOKEN
+
+export default function Explorer({ route, incidents }) {
+  // Convert backend incidents to GeoJSON for the Heatmap
+  const heatmapData = useMemo(() => {
+    return {
+      type: 'FeatureCollection',
+      features: (incidents || []).map(inc => ({
+        type: 'Feature',
+        properties: {
+          severity: inc.severity || 1,
+          type: inc.incident_type
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [inc.lng, inc.lat] // Mapbox takes [lng, lat]
+        }
+      }))
+    };
+  }, [incidents]);
+
+  // Convert backend route coordinates to GeoJSON Polyline
+  // The backend route is an array: [[lat, lng], [lat, lng]]
+  const routeData = useMemo(() => {
+    if (!route || route.length === 0) return null;
+    return {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: route.map(coord => [coord[1], coord[0]]) // Mapbox expects [lng, lat]
+      }
+    };
+  }, [route]);
+
+  // Heatmap styling layer definition
+  const heatmapLayer = {
+    id: 'incidents-heat',
+    type: 'heatmap',
+    source: 'incidents',
+    paint: {
+      'heatmap-weight': ['interpolate', ['linear'], ['get', 'severity'], 1, 0.2, 5, 1],
+      'heatmap-intensity': 1.5,
+      'heatmap-color': [
+        'interpolate', ['linear'], ['heatmap-density'],
+        0, 'rgba(0, 0, 0, 0)',
+        0.2, 'rgba(255, 60, 60, 0.2)',
+        0.5, 'rgba(255, 60, 60, 0.5)',
+        1, 'rgba(255, 0, 0, 0.9)'
+      ],
+      'heatmap-radius': 30,
+      'heatmap-opacity': 0.8
+    }
+  };
+
+  // Safe Route line layer definition
+  const routeLayer = {
+    id: 'safe-route-line',
+    type: 'line',
+    source: 'route',
+    layout: {
+      'line-join': 'round',
+      'line-cap': 'round'
+    },
+    paint: {
+      'line-color': '#00ffcc', // Cyberpunk neon cyan
+      'line-width': 4,
+      'line-opacity': 0.8
+    }
+  };
+
   return (
     <div className="glass rounded-2xl p-6 h-full flex flex-col border border-white/5 overflow-hidden">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg">TigerGraph Explorer</h3>
-        <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded-full animate-pulse border border-accent/30 font-bold uppercase tracking-widest">Live Node-Edge Feed</span>
+      <div className="flex justify-between items-center mb-4 z-10">
+        <h3 className="font-bold text-lg">Geospatial Explorer</h3>
+        <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded-full animate-pulse border border-accent/30 font-bold uppercase tracking-widest">Live Mapbox Feed</span>
       </div>
       
-      <div className="flex-1 relative flex items-center justify-center bg-black/20 rounded-xl overflow-hidden group">
-        {/* Animated Background Grid */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--accent) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-        
-        <svg viewBox="0 0 400 300" className="w-full h-full stroke-accent/40 fill-accent/40">
-          <defs>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
+      <div className="flex-1 relative rounded-xl overflow-hidden group">
+        <Map
+          initialViewState={{
+            longitude: 77.5946, 
+            latitude: 12.9716, // Default Bangalore
+            zoom: 13,
+            pitch: 45 // 3D perspective
+          }}
+          mapStyle="mapbox://styles/mapbox/dark-v11" // Night mode style
+          mapboxAccessToken={MAPBOX_TOKEN}
+        >
+          {/* Heatmap Layer */}
+          {incidents && incidents.length > 0 && (
+            <Source id="incidents" type="geojson" data={heatmapData}>
+              <Layer {...heatmapLayer} />
+            </Source>
+          )}
 
-          {/* Edges */}
-          {edges.map((edge, i) => {
-            const start = nodes.find(n => n.id === edge.source);
-            const end = nodes.find(n => n.id === edge.target);
-            return (
-              <line 
-                key={i} 
-                x1={start.x} y1={start.y} 
-                x2={end.x} y2={end.y} 
-                className="stroke-accent transition-all duration-500 opacity-30 group-hover:opacity-60" 
-                strokeWidth="1"
-                strokeDasharray="4 2"
-              />
-            );
-          })}
-
-          {/* Nodes */}
-          {nodes.map(node => (
-            <g key={node.id} className="cursor-pointer group/node" filter="url(#glow)">
-              <circle 
-                cx={node.x} cy={node.y} r="8" 
-                className="fill-accent group-hover/node:fill-white transition-colors duration-300" 
-              />
-              <circle 
-                cx={node.x} cy={node.y} r="14" 
-                className="stroke-accent fill-transparent animate-pulse-slow" 
-                strokeWidth="1" 
-                strokeOpacity="0.4"
-              />
-              <text 
-                x={node.x} y={node.y + 25} 
-                textAnchor="middle" 
-                className="text-[10px] fill-text-secondary group-hover/node:fill-text-primary font-bold uppercase tracking-widest pointer-events-none"
-              >
-                {node.type}
-              </text>
-            </g>
-          ))}
-        </svg>
+          {/* Route Layer */}
+          {routeData && (
+            <Source id="route" type="geojson" data={routeData}>
+              <Layer {...routeLayer} />
+            </Source>
+          )}
+        </Map>
 
         {/* HUD Overlay Elements */}
-        <div className="absolute top-4 left-4 flex gap-2">
-            {[1,2,3].map(i => <div key={i} className="w-1 h-3 bg-accent/40 rounded-full" />)}
-        </div>
-        <div className="absolute bottom-4 right-4 text-[10px] font-mono text-accent/60 flex flex-col items-end">
-            <span>TX_LATENCY: 0.14ms</span>
-            <span>NODES_SYNCED: 100%</span>
+        <div className="absolute bottom-4 right-4 text-[10px] font-mono text-accent/60 flex flex-col items-end pointer-events-none">
+            <span>MAP_ENGINE: MAPBOX_GL</span>
+            <span>LAYERS_SYNCED: 100%</span>
         </div>
       </div>
     </div>

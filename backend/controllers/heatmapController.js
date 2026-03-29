@@ -10,9 +10,14 @@ exports.getIncidents = async (req, res) => {
 
     let incidents;
 
-    if (process.env.DATA_SOURCE === 'tigergraph') {
+    if (req.dataSource === 'tigergraph') {
       // ── TIGERGRAPH PATH ──────────────────────────────────────────
       const raw = await tg.getAllIncidents(verifiedOnly);
+
+      if (!raw || !Array.isArray(raw)) {
+        return res.status(500).json({ error: 'Failed to retrieve incidents from TigerGraph' });
+      }
+
       // Normalize: TigerGraph returns { v_id, attributes: {...} }
       // We flatten to match the shape frontend already expects
       incidents = raw.map(item => ({
@@ -32,6 +37,14 @@ exports.getIncidents = async (req, res) => {
       incidents = verifiedOnly
         ? mockIncidents.filter(i => i.verified)
         : mockIncidents;
+    }
+
+    // ── CSV Output Support ──────────────────────────────────────────
+    if (req.query.format === 'csv') {
+      const { jsonToCsv } = require('../utils/csvUtil');
+      const csvData = jsonToCsv(incidents);
+      res.setHeader('Content-Type', 'text/csv');
+      return res.send(csvData);
     }
 
     res.json(incidents);

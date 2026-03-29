@@ -106,15 +106,28 @@ function computeSafetyScore(intersection, timeSlice, features = []) {
 
   // ── Risk label ────────────────────────────────────────────────
   let risk;
-  if (score >= 70) risk = 'low';
-  else if (score >= 45) risk = 'medium';
-  else risk = 'high';
+  let themeAction;
+  if (score >= 70) {
+    risk = 'low';
+    themeAction = 'pulse-green';
+  } else if (score >= 45) {
+    risk = 'medium';
+    themeAction = 'pulse-yellow';
+  } else {
+    risk = 'high';
+    themeAction = 'pulse-red';
+  }
+
+  // ── Explainable AI Reasoning ──────────────────────────────────
+  const reasoning = [...reasons, ...warnings].join('. ') + (reasons.length || warnings.length ? '.' : '');
 
   return {
     score,
     risk,
-    reasons,      // positive factors
-    warnings,     // negative factors
+    reasoning,    // Explainable AI text
+    themeAction,  // Cyberpunk theme sync
+    reasons,      // positive factors (legacy)
+    warnings,     // negative factors (legacy)
     timeSlice: {
       hour: currentHour,
       weather: timeSlice.weather_condition,

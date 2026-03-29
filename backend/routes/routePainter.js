@@ -1,5 +1,5 @@
-// routes/safeRoute.js
+// routes/routePainter.js
 const router = require('express').Router();
-const { getSafeRoute } = require('../controllers/routeController');
+const { getSafeRoute } = require('../controllers/painterController');
 router.get('/', getSafeRoute);
 module.exports = router;
