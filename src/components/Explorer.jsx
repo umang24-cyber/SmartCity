@@ -1,205 +1,246 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo } from 'react';
+import Map, { Source, Layer, Marker, Popup } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
-const RISK_COLORS = { low: '#00ff88', medium: '#ffaa00', high: '#ff3344' };
+// Using a free tokenless base map style for MapLibre
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
-export default function Explorer({ nodes = [], edges = [], intersectionName = 'MG Road & Brigade Rd' }) {
-  const [hoveredNode, setHoveredNode] = useState(null);
-  const [sonarAngle, setSonarAngle] = useState(0);
-  const rafRef = useRef(null);
-  const lastTimeRef = useRef(null);
+export default function Explorer({
+  intersections = [],
+  incidents = [],
+  safeRoute = null,
+  selectedIntersection = null,
+}) {
+  const [hoverInfo, setHoverInfo] = React.useState(null);
 
-  useEffect(() => {
-    const animate = (ts) => {
-      if (lastTimeRef.current !== null) {
-        const dt = ts - lastTimeRef.current;
-        setSonarAngle(a => (a + dt * 0.04) % 360);
-      }
-      lastTimeRef.current = ts;
-      rafRef.current = requestAnimationFrame(animate);
+  // Default viewport centered around MG Road & Brigade Rd (INT_001)
+  const initialViewState = {
+    longitude: 77.5946,
+    latitude: 12.9716,
+    zoom: 14.5,
+    pitch: 45,
+    bearing: 0
+  };
+
+  // Convert intersections to GeoJSON features
+  const intersectionGeojson = useMemo(() => {
+    return {
+      type: 'FeatureCollection',
+      features: intersections.map(node => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [node.lng, node.lat] },
+        properties: {
+          id: node.intersection_id,
+          name: node.intersection_name,
+          score: node.baseline_safety_score,
+          isolation: node.isolation_score,
+          cluster_id: node.cluster_id
+        }
+      }))
     };
-    rafRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, []);
+  }, [intersections]);
 
-  // Center & scale nodes into a 380×280 viewport
-  const W = 380, H = 280, cx = W / 2, cy = H / 2;
+  // Convert incidents to GeoJSON for Heatmap
+  const incidentGeojson = useMemo(() => {
+    return {
+      type: 'FeatureCollection',
+      features: incidents
+        .filter(inc => inc.lat && inc.lng)
+        .map(inc => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [inc.lng, inc.lat] },
+          properties: {
+            id: inc.incident_id,
+            type: inc.incident_type,
+            severity: inc.severity,
+            verified: inc.verified ? 1 : 0
+          }
+        }))
+    };
+  }, [incidents]);
+
+  // Convert safeRoute to GeoJSON Polyline
+  const routeGeojson = useMemo(() => {
+    if (!safeRoute || !safeRoute.route || safeRoute.route.length === 0) return null;
+    return {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            // Our route points might be dicts with lat/lng
+            coordinates: safeRoute.route.map(pt => [pt.lng, pt.lat])
+          },
+          properties: { id: 'safe-route' }
+        }
+      ]
+    };
+  }, [safeRoute]);
+
+  // Layer Styles
+  const intersectionLayerStyle = {
+    id: 'intersections-layer',
+    type: 'circle',
+    source: 'intersections',
+    paint: {
+      'circle-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        10, 3,
+        15, 6
+      ],
+      'circle-color': [
+        'step',
+        ['get', 'score'],
+        '#ff3344', // <45 is red
+        45, '#ffaa00', // >=45 is orange
+        70, '#00ff88'  // >=70 is green
+      ],
+      'circle-opacity': 0.8,
+      'circle-stroke-width': 1,
+      'circle-stroke-color': '#fff'
+    }
+  };
+
+  const heatmapLayerStyle = {
+    id: 'incidents-heatmap',
+    type: 'heatmap',
+    source: 'incidents',
+    maxzoom: 16,
+    paint: {
+      // Increase heatmap weight based on severity
+      'heatmap-weight': [
+        'interpolate',
+        ['linear'],
+        ['get', 'severity'],
+        1, 0.2,
+        5, 1
+      ],
+      // Color ramp
+      'heatmap-color': [
+        'interpolate',
+        ['linear'],
+        ['heatmap-density'],
+        0, 'rgba(0,0,0,0)',
+        0.2, 'rgba(255,170,0,0.4)',
+        0.5, 'rgba(255,80,0,0.6)',
+        1, 'rgba(255,0,0,0.9)'
+      ],
+      'heatmap-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        10, 15,
+        15, 40
+      ],
+      'heatmap-opacity': 0.7
+    }
+  };
+
+  const routeLayerStyle = {
+    id: 'safe-route-line',
+    type: 'line',
+    source: 'route',
+    layout: {
+      'line-join': 'round',
+      'line-cap': 'round'
+    },
+    paint: {
+      'line-color': '#00ff88',
+      'line-width': 5,
+      'line-opacity': 0.8,
+      'line-dasharray': [1, 2] // animated effect via dash array if possible, or static dashed line
+    }
+  };
+
+  // Find selected intersection marker
+  const selectedNode = intersections.find(n => n.intersection_id === selectedIntersection);
+
+  // Token is no longer required with MapLibre and open map styles
 
   return (
-    <div className="panel panel-cut" style={{ padding: '1rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexShrink: 0 }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', color: 'var(--accent)', letterSpacing: '0.15em' }}>
-            NODE-EDGE SONAR
-          </div>
-          <div className="label-xs" style={{ marginTop: 2 }}>{intersectionName}</div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div className="led led-green pulse-green" />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--accent)' }}>LIVE FEED</span>
-        </div>
+    <div className="panel panel-cut" style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {/* HUD overlay header */}
+      <div style={{
+        position: 'absolute', top: 12, left: 16, zIndex: 10,
+        fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'rgba(0,255,136,0.8)',
+        lineHeight: 1.5, pointerEvents: 'none',
+        background: 'rgba(3,13,24,0.6)', padding: '4px 8px', border: '1px solid var(--border)'
+      }}>
+        <div style={{ fontWeight: 'bold' }}>TACTICAL MAP VIEW</div>
+        <div>NODES: {intersections.length}</div>
+        <div>REPORTED THREATS: {incidents.length}</div>
       </div>
 
-      {/* SVG canvas */}
-      <div style={{ flex: 1, background: 'rgba(0,10,5,0.8)', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          style={{ width: '100%', height: '100%' }}
-          preserveAspectRatio="xMidYMid meet"
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <Map
+          initialViewState={initialViewState}
+          mapStyle={MAP_STYLE}
+          interactiveLayerIds={['intersections-layer']}
+          onMouseMove={(e) => {
+            if (e.features && e.features.length > 0) {
+              const feature = e.features[0];
+              setHoverInfo({
+                longitude: e.lngLat.lng,
+                latitude: e.lngLat.lat,
+                name: feature.properties.name,
+                id: feature.properties.id,
+                score: feature.properties.score
+              });
+            } else {
+              setHoverInfo(null);
+            }
+          }}
+          onMouseLeave={() => setHoverInfo(null)}
         >
-          <defs>
-            <filter id="node-glow">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-            <radialGradient id="sonar-bg" cx="50%" cy="50%">
-              <stop offset="0%" stopColor="rgba(0,255,136,0.04)" />
-              <stop offset="100%" stopColor="rgba(0,0,0,0)" />
-            </radialGradient>
-            {/* Sonar sweep gradient */}
-            <linearGradient id="sweep-grad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="rgba(0,255,136,0)" />
-              <stop offset="100%" stopColor="rgba(0,255,136,0.25)" />
-            </linearGradient>
-          </defs>
+          {/* Danger Heatmap Source */}
+          <Source id="incidents" type="geojson" data={incidentGeojson}>
+            <Layer {...heatmapLayerStyle} />
+          </Source>
 
-          {/* Background dot grid */}
-          <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.5" fill="rgba(0,255,136,0.12)" />
-          </pattern>
-          <rect width={W} height={H} fill="url(#dot-grid)" />
+          {/* Safe Route Source */}
+          {routeGeojson && (
+            <Source id="route" type="geojson" data={routeGeojson}>
+              <Layer {...routeLayerStyle} />
+            </Source>
+          )}
 
-          {/* Sonar rings */}
-          {[40, 80, 120].map((r, i) => (
-            <circle key={i} cx={cx} cy={cy} r={r} fill="none"
-              stroke="rgba(0,255,136,0.08)" strokeWidth="0.5"
-              strokeDasharray="4 4"
-            />
-          ))}
+          {/* Map Dots / Intersections */}
+          <Source id="intersections" type="geojson" data={intersectionGeojson}>
+            <Layer {...intersectionLayerStyle} />
+          </Source>
 
-          {/* Sonar sweep sector */}
-          {(() => {
-            const rad = sonarAngle * Math.PI / 180;
-            const sweepRad = 70;
-            // draw a sector arc
-            const x1 = cx + sweepRad * Math.cos(rad);
-            const y1 = cy + sweepRad * Math.sin(rad);
-            const endAngle = rad - 0.8;
-            const x2 = cx + sweepRad * Math.cos(endAngle);
-            const y2 = cy + sweepRad * Math.sin(endAngle);
-            return (
-              <g>
-                <line x1={cx} y1={cy} x2={x1} y2={y1} stroke="rgba(0,255,136,0.5)" strokeWidth="1" />
-                <path
-                  d={`M${cx},${cy} L${x1},${y1} A${sweepRad},${sweepRad} 0 0,0 ${x2},${y2} Z`}
-                  fill="rgba(0,255,136,0.06)"
-                />
-              </g>
-            );
-          })()}
+          {/* Highlight Selected node if any */}
+          {selectedNode && (
+            <Marker longitude={selectedNode.lng} latitude={selectedNode.lat} anchor="bottom">
+              <div className="pulse-amber" style={{
+                width: 24, height: 24, borderRadius: '50%', border: '2px solid var(--amber)',
+                background: 'rgba(255,170,0,0.3)'
+              }} />
+            </Marker>
+          )}
 
-          {/* Edges */}
-          {edges.map((edge, i) => {
-            const s = nodes.find(n => n.id === edge.source);
-            const t = nodes.find(n => n.id === edge.target);
-            if (!s || !t) return null;
-            return (
-              <line key={i}
-                x1={s.x} y1={s.y} x2={t.x} y2={t.y}
-                stroke="rgba(0,255,136,0.2)" strokeWidth="1"
-                strokeDasharray="5 3"
-              />
-            );
-          })}
-
-          {/* Nodes */}
-          {nodes.map(node => {
-            const color = RISK_COLORS[node.risk] || '#00ff88';
-            const isHovered = hoveredNode === node.id;
-            return (
-              <g key={node.id}
-                onMouseEnter={() => setHoveredNode(node.id)}
-                onMouseLeave={() => setHoveredNode(null)}
-                style={{ cursor: 'pointer' }}
-                filter="url(#node-glow)"
-              >
-                {/* Outer ring */}
-                <circle cx={node.x} cy={node.y} r={isHovered ? 18 : 14}
-                  fill="transparent" stroke={color} strokeWidth="1"
-                  strokeOpacity={isHovered ? 0.8 : 0.3}
-                  style={{ transition: 'r 0.2s, stroke-opacity 0.2s' }}
-                />
-                {/* Inner */}
-                <circle cx={node.x} cy={node.y} r={7}
-                  fill={color} fillOpacity={isHovered ? 1 : 0.7}
-                  style={{ filter: `drop-shadow(0 0 6px ${color})`, transition: 'fill-opacity 0.2s' }}
-                />
-                {/* Label */}
-                <text x={node.x} y={node.y + 26}
-                  textAnchor="middle"
-                  fill={color} fontSize="7"
-                  fontFamily="Share Tech Mono, monospace"
-                  letterSpacing="0.08em"
-                  opacity={isHovered ? 1 : 0.7}
-                >
-                  {node.type}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Crosshairs */}
-          <line x1={cx - 8} y1={cy} x2={cx + 8} y2={cy} stroke="rgba(0,255,136,0.3)" strokeWidth="0.5" />
-          <line x1={cx} y1={cy - 8} x2={cx} y2={cy + 8} stroke="rgba(0,255,136,0.3)" strokeWidth="0.5" />
-        </svg>
-
-        {/* HUD overlays */}
-        <div style={{
-          position: 'absolute', top: 8, left: 8,
-          fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'rgba(0,255,136,0.5)',
-          lineHeight: 1.8,
-        }}>
-          <div>NODES: {nodes.length}</div>
-          <div>EDGES: {edges.length}</div>
-          <div>SWEEP: {sonarAngle.toFixed(0)}°</div>
-        </div>
-        <div style={{
-          position: 'absolute', bottom: 8, right: 8,
-          fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'rgba(0,255,136,0.5)',
-          textAlign: 'right', lineHeight: 1.8,
-        }}>
-          <div>TX: 0.14ms</div>
-          <div>SYNC: 100%</div>
-        </div>
-
-        {/* Node tooltip */}
-        {hoveredNode !== null && (() => {
-          const n = nodes.find(nd => nd.id === hoveredNode);
-          if (!n) return null;
-          return (
-            <div style={{
-              position: 'absolute', top: 8, right: 8,
-              background: 'rgba(3,13,24,0.95)',
-              border: '1px solid var(--accent)',
-              padding: '0.4rem 0.65rem',
-              fontFamily: 'var(--font-mono)', fontSize: '0.63rem',
-              color: 'var(--text-primary)',
-            }}>
-              <div style={{ color: 'var(--accent)', marginBottom: 2, letterSpacing: '0.1em' }}>{n.type}</div>
-              <div style={{ color: 'var(--text-secondary)' }}>RISK: <span style={{ color: RISK_COLORS[n.risk] }}>{(n.risk || 'LOW').toUpperCase()}</span></div>
-            </div>
-          );
-        })()}
-      </div>
-
-      {/* Legend */}
-      <div style={{ display: 'flex', gap: '1rem', paddingTop: '0.5rem', flexShrink: 0 }}>
-        {Object.entries(RISK_COLORS).map(([r, c]) => (
-          <div key={r} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: c, boxShadow: `0 0 4px ${c}` }} />
-            <span className="label-xs" style={{ fontSize: '0.55rem' }}>{r.toUpperCase()}</span>
-          </div>
-        ))}
+          {hoverInfo && (
+            <Popup
+              longitude={hoverInfo.longitude}
+              latitude={hoverInfo.latitude}
+              closeButton={false}
+              closeOnClick={false}
+              anchor="top"
+              style={{ padding: 0 }}
+            >
+              <div style={{
+                background: 'rgba(3,13,24,0.95)',
+                border: '1px solid var(--accent)',
+                padding: '0.4rem 0.65rem',
+                fontFamily: 'var(--font-mono)', fontSize: '0.65rem',
+                color: 'var(--text-primary)',
+              }}>
+                <div style={{ color: 'var(--accent)', marginBottom: 2 }}>{hoverInfo.name}</div>
+                <div style={{ color: 'var(--text-secondary)' }}>ID: {hoverInfo.id}</div>
+                <div style={{ color: 'var(--text-secondary)' }}>SAFETY SCORE: {hoverInfo.score}</div>
+              </div>
+            </Popup>
+          )}
+        </Map>
       </div>
     </div>
   );

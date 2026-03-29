@@ -16,10 +16,10 @@ export default function DangerPanel({
     );
   }
 
-  const { score, risk, reasons = [], warnings = [], meta = {}, timeSlice = {} } = danger;
+  const { score, comfort_score, comfort_label, risk, reasons = [], warnings = [], meta = {}, timeSlice = {} } = danger;
   const color = RISKCOLOR[risk] || 'var(--accent)';
   const circumference = 2 * Math.PI * 54;
-  const dashOffset = circumference - (circumference * score) / 100;
+  const dashOffset = circumference - (circumference * (comfort_score ?? score)) / 100;
 
   const intersections = [
     { id: 'INT_001', name: 'MG Road & Brigade Rd' },
@@ -86,10 +86,10 @@ export default function DangerPanel({
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             }}>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 900, color, lineHeight: 1 }}>
-                {score}
+                {comfort_score ?? score}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color, letterSpacing: '0.2em', marginTop: 4 }}>
-                {risk.toUpperCase()} RISK
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color, letterSpacing: '0.1em', marginTop: 4, textAlign: 'center' }}>
+                {comfort_label ?? (risk.toUpperCase() + ' RISK')}
               </div>
             </div>
           </div>

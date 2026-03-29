@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   fetchDangerScore, fetchIncidents, fetchSafeRoute, fetchClusterInfo, fetchHealth,
+  fetchIntersections,
   MOCK_DANGER, MOCK_INCIDENTS, MOCK_ROUTE, MOCK_CLUSTER
 } from '../api/smartcity';
 
 export const useTigerGraph = () => {
-  const [danger, setDanger]       = useState(null);
-  const [incidents, setIncidents] = useState([]);
-  const [safeRoute, setSafeRoute] = useState(null);
-  const [cluster, setCluster]     = useState(null);
+  const [danger, setDanger]             = useState(null);
+  const [incidents, setIncidents]       = useState([]);
+  const [safeRoute, setSafeRoute]       = useState(null);
+  const [cluster, setCluster]           = useState(null);
+  const [intersections, setIntersections] = useState([]);
   const [backendOnline, setBackendOnline] = useState(null); // null=checking, true, false
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading]       = useState(true);
   const [selectedIntersection, setSelectedIntersection] = useState('INT_001');
   const [selectedWeather, setSelectedWeather]           = useState('clear');
   const [verifiedOnly, setVerifiedOnly]                 = useState(false);
@@ -61,12 +63,29 @@ export const useTigerGraph = () => {
     }
   }, []);
 
+  // ── Load all intersections (for map dots layer) ───────────────
+  const loadIntersections = useCallback(async () => {
+    try {
+      const d = await fetchIntersections();
+      setIntersections(d);
+    } catch {
+      // Fallback inline mock (mirrors API shape)
+      setIntersections([
+        { intersection_id: 'INT_001', intersection_name: 'MG Road & Brigade Rd', lat: 12.9716, lng: 77.5946, baseline_safety_score: 72, cluster_id: 1, isolation_score: 0.15 },
+        { intersection_id: 'INT_002', intersection_name: 'Residency Road & Richmond Rd', lat: 12.9698, lng: 77.5981, baseline_safety_score: 58, cluster_id: 1, isolation_score: 0.55 },
+        { intersection_id: 'INT_003', intersection_name: 'Cubbon Park North Gate', lat: 12.9763, lng: 77.5929, baseline_safety_score: 45, cluster_id: 2, isolation_score: 0.78 },
+        { intersection_id: 'INT_004', intersection_name: 'Lavelle Rd & Museum Rd', lat: 12.9725, lng: 77.5958, baseline_safety_score: 66, cluster_id: 1, isolation_score: 0.30 },
+        { intersection_id: 'INT_005', intersection_name: 'St Marks Rd & Cunningham Rd', lat: 12.9738, lng: 77.5965, baseline_safety_score: 78, cluster_id: 1, isolation_score: 0.10 },
+      ]);
+    }
+  }, []);
+
   // ── Initial load ──────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
       await checkHealth();
-      await Promise.allSettled([loadDanger(), loadIncidents(), loadRoute(), loadCluster()]);
+      await Promise.allSettled([loadDanger(), loadIncidents(), loadRoute(), loadCluster(), loadIntersections()]);
       setIsLoading(false);
     };
     init();
@@ -90,6 +109,8 @@ export const useTigerGraph = () => {
   // ── Derived legacy shape for compatibility ────────────────────
   const data = {
     safety_score:        danger?.score ?? 72,
+    comfort_score:       danger?.comfort_score ?? 72,
+    comfort_label:       danger?.comfort_label ?? 'SAFE CORRIDOR',
     isolation_score:     danger?.meta?.isolation_score ?? 0.15,
     primary_risk_factors: (danger?.warnings ?? []).slice(0, 3).map(w => w.slice(0, 30)),
     variance: [
@@ -115,11 +136,11 @@ export const useTigerGraph = () => {
   };
 
   return {
-    data, danger, incidents, safeRoute, cluster,
+    data, danger, incidents, safeRoute, cluster, intersections,
     backendOnline, isLoading,
     selectedIntersection, setSelectedIntersection,
     selectedWeather, setSelectedWeather,
     verifiedOnly, setVerifiedOnly,
-    refresh: () => { loadDanger(); loadIncidents(); loadRoute(); loadCluster(); }
+    refresh: () => { loadDanger(); loadIncidents(); loadRoute(); loadCluster(); loadIntersections(); }
   };
 };

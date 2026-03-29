@@ -29,7 +29,7 @@ const PanelHeader = ({ title, subtitle, badge }) => (
 
 export default function Dashboard() {
   const {
-    data, danger, incidents, safeRoute, cluster,
+    data, danger, incidents, safeRoute, cluster, intersections,
     backendOnline, isLoading,
     selectedIntersection, setSelectedIntersection,
     selectedWeather, setSelectedWeather,
@@ -64,9 +64,10 @@ export default function Dashboard() {
             {/* Main map */}
             <div style={{ gridRow: '1 / 3', minHeight: 420 }}>
               <Explorer
-                nodes={data.nodes}
-                edges={data.edges}
-                intersectionName={danger?.meta?.intersection_name}
+                intersections={intersections}
+                incidents={incidents}
+                safeRoute={safeRoute}
+                selectedIntersection={selectedIntersection}
               />
             </div>
 
@@ -175,7 +176,8 @@ export default function Dashboard() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
         <Header
-          safetyScore={data.safety_score}
+          safetyScore={data.comfort_score}
+          comfortLabel={data.comfort_label}
           backendOnline={backendOnline}
           intersectionName={danger?.meta?.intersection_name}
           onRefresh={refresh}

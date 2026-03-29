@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:5000';
+const BASE = 'http://localhost:8000';
 
 async function apiFetch(url) {
   const res = await fetch(url);
@@ -7,15 +7,15 @@ async function apiFetch(url) {
 }
 
 export async function fetchDangerScore(intersection_id = 'INT_001', weather = 'clear') {
-  return apiFetch(`${BASE}/danger-score?intersection_id=${intersection_id}&weather=${weather}`);
+  return apiFetch(`${BASE}/danger-score/?intersection_id=${intersection_id}&weather=${weather}`);
 }
 
 export async function fetchIncidents(verifiedOnly = false) {
-  return apiFetch(`${BASE}/incidents?verified=${verifiedOnly}`);
+  return apiFetch(`${BASE}/incidents/?verified=${verifiedOnly}`);
 }
 
 export async function postReport({ lat, lng, incident_type, severity }) {
-  const res = await fetch(`${BASE}/report`, {
+  const res = await fetch(`${BASE}/report/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lat, lng, incident_type, severity }),
@@ -26,15 +26,19 @@ export async function postReport({ lat, lng, incident_type, severity }) {
 }
 
 export async function fetchSafeRoute(start = 'INT_001', end = 'INT_005') {
-  return apiFetch(`${BASE}/safe-route?start=${start}&end=${end}`);
+  return apiFetch(`${BASE}/safe-route/?start=${start}&end=${end}`);
 }
 
 export async function fetchClusterInfo(cluster_id = 1) {
-  return apiFetch(`${BASE}/cluster-info?cluster_id=${cluster_id}`);
+  return apiFetch(`${BASE}/cluster-info/?cluster_id=${cluster_id}`);
 }
 
 export async function fetchHealth() {
   return apiFetch(`${BASE}/health`);
+}
+
+export async function fetchIntersections() {
+  return apiFetch(`${BASE}/intersections/`);
 }
 
 export const MOCK_DANGER = {
