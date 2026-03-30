@@ -73,6 +73,11 @@ async def analyze_cctv_upload(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Could not read uploaded file: {exc}",
         )
+    logger.info(
+        "CCTV upload request camera_id=%s bytes=%d",
+        camera_id,
+        len(image_bytes),
+    )
     cv_bundle = request.app.state.models["cv"]
     return _run_analysis(image_bytes, camera_id, cv_bundle)
 
@@ -92,6 +97,11 @@ async def analyze_cctv_base64(req: CCTVBase64Request, request: Request = None) -
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid base64 image data: {exc}",
         )
+    logger.info(
+        "CCTV base64 request camera_id=%s decoded_bytes=%d",
+        req.camera_id,
+        len(image_bytes),
+    )
     cv_bundle = request.app.state.models["cv"]
     return _run_analysis(image_bytes, req.camera_id, cv_bundle)
 
@@ -125,7 +135,7 @@ def _run_analysis(image_bytes: bytes, camera_id: str | None, cv_bundle) -> CCTVR
             detail=f"CV analysis failed: {exc}",
         )
 
-    return CCTVResponse(
+    response = CCTVResponse(
         camera_id=camera_id,
         people_count=result["person_count"],
         crowd_density=result["crowd_density"],
@@ -138,3 +148,12 @@ def _run_analysis(image_bytes: bytes, camera_id: str | None, cv_bundle) -> CCTVR
         inference_ms=result["inference_ms"],
         loader_status=result["loader_status"],
     )
+    logger.info(
+        "CCTV response camera_id=%s people=%d density=%s anomaly=%s danger=%.4f",
+        response.camera_id,
+        response.people_count,
+        response.crowd_density,
+        response.anomaly_detected,
+        response.danger_contribution,
+    )
+    return response

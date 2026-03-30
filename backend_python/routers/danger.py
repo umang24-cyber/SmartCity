@@ -80,7 +80,21 @@ class DangerResponse(BaseModel):
     ),
 )
 async def get_danger_score(req: DangerRequest, request: Request):
-    cache_key = f"{req.location_id}:{req.lat:.4f}:{req.lng:.4f}"
+    logger.info(
+        "Danger request zone=%s has_history=%s history_len=%d zone_values_len=%d",
+        req.location_id,
+        bool(req.history),
+        len(req.history or []),
+        len(req.zone_values or []),
+    )
+    history_len = len(req.history or [])
+    zone_values_len = len(req.zone_values or [])
+    zone_tail = ",".join(f"{v:.2f}" for v in (req.zone_values or [])[-3:])
+    graph_key = "none" if req.graph_score is None else f"{req.graph_score:.3f}"
+    cache_key = (
+        f"{req.location_id}:{req.lat:.4f}:{req.lng:.4f}"
+        f":h{history_len}:z{zone_values_len}:zt{zone_tail}:g{graph_key}"
+    )
     cached = _cache.get(cache_key)
     if cached is not None:
         logger.debug("Danger score cache hit: %s", req.location_id)
@@ -135,4 +149,11 @@ async def get_danger_score(req: DangerRequest, request: Request):
     }
 
     _cache.set(cache_key, payload)
+    logger.info(
+        "Danger response zone=%s score=%.4f risk=%s alert=%s",
+        payload["zone_id"],
+        payload["final_score"],
+        payload["risk_level"],
+        payload["alert"],
+    )
     return DangerResponse(**payload)

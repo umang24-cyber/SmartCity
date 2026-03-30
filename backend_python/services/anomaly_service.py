@@ -18,7 +18,11 @@ from ai.anomaly.loader import get_anomaly_bundle
 logger = logging.getLogger(__name__)
 
 
-def detect_anomaly(zone_id: str, values: list[float]) -> dict[str, Any]:
+def detect_anomaly(
+    zone_id: str,
+    values: list[float],
+    bundle: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Detect whether the given time-series values contain an anomaly.
 
@@ -41,7 +45,7 @@ def detect_anomaly(zone_id: str, values: list[float]) -> dict[str, Any]:
         "loader_status": str,       # "loaded" | "fallback"
     }
     """
-    bundle = get_anomaly_bundle()
+    bundle = bundle or get_anomaly_bundle()
 
     # Adapt flat list → recent_data format expected by the z-score detector
     # Each row needs "incident_count" and "crowd" keys. We use the value for

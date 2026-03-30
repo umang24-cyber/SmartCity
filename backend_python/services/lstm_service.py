@@ -16,6 +16,8 @@ This module NEVER loads a model itself — it always delegates to get_lstm_bundl
 from __future__ import annotations
 
 import logging
+import hashlib
+import json
 from datetime import datetime
 from typing import Any
 
@@ -36,6 +38,7 @@ def predict_danger(
     history: list[dict],
     current_time: str | None = None,
     use_cache: bool = True,
+    bundle: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Generate a 24-hour danger forecast for one intersection.
@@ -56,11 +59,15 @@ def predict_danger(
     Keys: intersection_id, forecast_generated_at, model_info, predictions,
           danger_hours, alert_recommended, alert_time, loader_status
     """
-    bundle = get_lstm_bundle()
+    bundle = bundle or get_lstm_bundle()
 
     # Cache key: intersection + UTC hour (predictions are hourly, cache for 1h)
     now_str = current_time or datetime.utcnow().strftime("%Y-%m-%dT%H:00:00")
-    cache_key = f"lstm:{intersection_id}:{now_str[:13]}"
+    history_tail = history[-24:] if history else []
+    history_digest = hashlib.sha1(
+        json.dumps(history_tail, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()[:12]
+    cache_key = f"lstm:{intersection_id}:{now_str[:13]}:{history_digest}"
 
     if use_cache:
         cached = _cache.get(cache_key)

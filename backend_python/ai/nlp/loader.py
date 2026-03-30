@@ -50,11 +50,26 @@ def _mock_analyze_report(text: str) -> dict[str, Any]:
     so the service layer never needs null-checks.
     """
     t = text.lower()
-    if any(k in t for k in ["attack", "assault", "emergency", "help", "danger", "sos"]):
+    critical_keywords = [
+        "attack", "assault", "emergency", "help", "danger", "sos",
+        "chasing", "chased", "police", "kidnap", "rape",
+    ]
+    high_keywords = [
+        "scared", "followed", "following", "threatened", "harassed", "unsafe",
+        "stalking", "stalker",
+    ]
+    medium_keywords = ["suspicious", "uncomfortable", "dark", "loitering"]
+    matched = sorted(
+        {
+            k for k in (critical_keywords + high_keywords + medium_keywords)
+            if k in t
+        }
+    )
+    if any(k in t for k in critical_keywords):
         level, sev, emotion = "CRITICAL", 4.5, "fear"
-    elif any(k in t for k in ["scared", "followed", "threatened", "harassed", "unsafe"]):
+    elif any(k in t for k in high_keywords):
         level, sev, emotion = "HIGH",     3.5, "fear"
-    elif any(k in t for k in ["suspicious", "uncomfortable", "dark", "loitering"]):
+    elif any(k in t for k in medium_keywords):
         level, sev, emotion = "MEDIUM",   2.5, "disgust"
     else:
         level, sev, emotion = "LOW",      1.5, "neutral"
@@ -79,7 +94,7 @@ def _mock_analyze_report(text: str) -> dict[str, Any]:
         },
         "emergency_level": level,
         "is_emergency": level in ("CRITICAL", "HIGH"),
-        "matched_keywords": [],
+        "matched_keywords": matched,
         "severity": sev,
         "credibility_score": cred,
         "credibility_label": "LIKELY GENUINE" if cred >= 55 else "SUSPICIOUS",

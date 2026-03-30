@@ -87,6 +87,11 @@ class AnomalyResponse(BaseModel):
     ),
 )
 async def detect_zone_anomaly(req: AnomalyRequest, request: Request) -> AnomalyResponse:
+    logger.info(
+        "Anomaly request zone=%s values_len=%d",
+        req.zone_id,
+        len(req.values),
+    )
     models = request.app.state.models
     anomaly_bundle = models["anomaly"]
     try:
@@ -103,7 +108,7 @@ async def detect_zone_anomaly(req: AnomalyRequest, request: Request) -> AnomalyR
             detail=f"Anomaly detection failed: {exc}",
         )
 
-    return AnomalyResponse(
+    response = AnomalyResponse(
         zone_id=result["zone_id"],
         anomaly_score=float(result["anomaly_score"]),
         anomaly_detected=bool(result["is_anomaly"]),
@@ -113,3 +118,11 @@ async def detect_zone_anomaly(req: AnomalyRequest, request: Request) -> AnomalyR
         details=result.get("details", {}),
         loader_status=result.get("loader_status", "unknown"),
     )
+    logger.info(
+        "Anomaly response zone=%s detected=%s score=%.4f method=%s",
+        response.zone_id,
+        response.anomaly_detected,
+        response.anomaly_score,
+        response.method,
+    )
+    return response

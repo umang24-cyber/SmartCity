@@ -163,6 +163,12 @@ async def analyze_incident_report(req: ReportRequest) -> ReportAnalysisResponse:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Report text must not be blank.",
         )
+    logger.info(
+        "NLP analyze request report_id=%s zone_id=%s chars=%d",
+        req.report_id,
+        req.zone_id,
+        len(req.text),
+    )
 
     try:
         result = analyze_report(req.text)
@@ -178,7 +184,7 @@ async def analyze_incident_report(req: ReportRequest) -> ReportAnalysisResponse:
             detail=f"NLP analysis failed: {exc}",
         )
 
-    return ReportAnalysisResponse(
+    response = ReportAnalysisResponse(
         report_id=req.report_id,
         sentiment=result.get("sentiment", "neutral"),
         sentiment_score=float(result.get("sentiment_score", 0.0)),
@@ -203,3 +209,12 @@ async def analyze_incident_report(req: ReportRequest) -> ReportAnalysisResponse:
         processing_ms=float(result.get("processing_ms", 0.0)),
         loader_status=result.get("loader_status", "unknown"),
     )
+    logger.info(
+        "NLP analyze response report_id=%s sentiment=%s severity=%.2f emergency=%s loader=%s",
+        response.report_id,
+        response.sentiment,
+        response.severity,
+        response.emergency_level,
+        response.loader_status,
+    )
+    return response

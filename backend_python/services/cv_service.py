@@ -35,7 +35,10 @@ _DENSITY_DANGER: dict[str, float] = {
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def analyze_frame(image_bytes: bytes) -> dict[str, Any]:
+def analyze_frame(
+    image_bytes: bytes,
+    bundle: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Run the computer vision analysis pipeline on a single frame.
 
@@ -59,7 +62,7 @@ def analyze_frame(image_bytes: bytes) -> dict[str, Any]:
         "loader_status":       str,     # "loaded" | "fallback"
     }
     """
-    bundle = get_cv_bundle()
+    bundle = bundle or get_cv_bundle()
 
     try:
         raw = bundle["predict_fn"](image_bytes)

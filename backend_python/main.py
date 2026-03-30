@@ -130,6 +130,8 @@ app.include_router(intersections.router, prefix="/api/v1")
 app.include_router(incidents.router,    prefix="/api/v1")
 app.include_router(cluster_info.router, prefix="/api/v1")
 app.include_router(graph.router,        prefix="/api/v1")
+app.include_router(danger_score.router)
+app.include_router(incidents.router)
 
 
 @app.get("/health", tags=["System"])
