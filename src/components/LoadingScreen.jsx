@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const BOOT_LINES = [
-  '> SMARTCITY COMMAND SYSTEM v4.2.1',
+  '> ORAYA COMMAND SYSTEM v4.2.1',
   '> INITIALIZING SONAR ARRAY...',
   '> LOADING SECTOR INTELLIGENCE...',
   '> CONNECTING TO SAFETY ENGINE...',
@@ -71,10 +71,10 @@ export default function LoadingScreen({ onComplete }) {
             letterSpacing: '0.35em',
             textShadow: '0 0 30px var(--accent), 0 0 60px rgba(0,255,136,0.3)',
           }}>
-            SMARTCITY
+            ORAYA
           </div>
           <div className="label-xs" style={{ marginTop: '0.25rem', letterSpacing: '0.5em' }}>
-            COMMAND & CONTROL SYSTEM
+            SAFETY, BEFORE IT'S NEEDED
           </div>
         </div>
 

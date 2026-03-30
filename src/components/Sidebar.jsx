@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
+import ModeSlider from './ModeSlider';
 
 const TABS = [
   { id: 'SONAR',    icon: '◎', label: 'SONAR MAP' },
@@ -12,18 +13,19 @@ const TABS = [
 ];
 
 export default function Sidebar({ activeTab, onTabChange, threatCount = 0 }) {
-  const { currentTheme, changeTheme, themes } = useTheme();
+  const { currentTheme, changeTheme, themes, mode } = useTheme();
 
   return (
     <aside style={{
       width: 200,
       flexShrink: 0,
-      background: 'rgba(2, 10, 20, 0.97)',
+      background: 'var(--bg-panel)',
       borderRight: '1px solid var(--border)',
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
       zIndex: 50,
+      transition: 'background 0.4s ease',
     }}>
       {/* Logo slot */}
       <div style={{
@@ -62,7 +64,7 @@ export default function Sidebar({ activeTab, onTabChange, threatCount = 0 }) {
               {isAlert && (
                 <span style={{
                   background: 'var(--red-alert)',
-                  color: '#030d18',
+                  color: 'var(--bg-primary)',
                   fontSize: '0.55rem',
                   fontWeight: 700,
                   padding: '1px 5px',
@@ -77,25 +79,40 @@ export default function Sidebar({ activeTab, onTabChange, threatCount = 0 }) {
         })}
       </nav>
 
-      {/* Theme Picker */}
-      <div style={{ padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', flexShrink: 0 }}>
-        <div className="label-xs" style={{ fontSize: '0.55rem' }}>THEME CALIBRATION</div>
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-          {themes.map(t => (
-            <button
-              key={t.id}
-              onClick={() => changeTheme(t.id)}
-              title={t.name}
-              style={{
-                width: 14, height: 14, borderRadius: 2,
-                background: t.color, cursor: 'pointer',
-                border: currentTheme === t.id ? `1px solid #fff` : `1px solid transparent`,
-                boxShadow: currentTheme === t.id ? `0 0 6px ${t.color}` : 'none',
-                opacity: currentTheme === t.id ? 1 : 0.4,
-                transition: 'all 0.2s'
-              }}
-            />
-          ))}
+      {/* Theme Calibration & Mode Toggle */}
+      <div style={{ 
+        padding: '1rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1.25rem', 
+        flexShrink: 0,
+        background: 'rgba(var(--accent-rgb), 0.03)',
+        borderTop: '1px solid var(--border)'
+      }}>
+        
+        {/* Environment Mode Slider */}
+        <ModeSlider />
+
+        {/* Theme Picker */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div className="label-xs" style={{ fontSize: '0.55rem' }}>THEME_CALIBRATION</div>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            {themes.map(t => (
+              <button
+                key={t.id}
+                onClick={() => changeTheme(t.id)}
+                title={t.name}
+                style={{
+                  width: 14, height: 14, borderRadius: 2,
+                  background: t.color, cursor: 'pointer',
+                  border: currentTheme === t.id ? `1px solid var(--text-primary)` : `1px solid transparent`,
+                  boxShadow: currentTheme === t.id ? `0 0 8px ${t.color}` : 'none',
+                  opacity: currentTheme === t.id ? 1 : 0.4,
+                  transition: 'all 0.2s'
+                }}
+              />
+            ))}
+          </div>
         </div>
       </div>
 

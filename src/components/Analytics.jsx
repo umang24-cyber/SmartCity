@@ -1,19 +1,21 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
-
-const chartStyle = {
-  contentStyle: {
-    background: 'rgba(3,13,24,0.97)',
-    border: '1px solid rgba(0,255,136,0.2)',
-    borderRadius: 0,
-    fontFamily: 'Share Tech Mono, monospace',
-    fontSize: 10,
-    color: '#c8f0d0',
-  },
-  itemStyle: { color: '#00ff88' },
-};
+import { useTheme } from '../context/ThemeContext';
 
 export function SafetyVariance({ data = [] }) {
+  const { mode } = useTheme();
+
+  const chartStyle = {
+    contentStyle: {
+      background: 'var(--bg-panel)',
+      border: '1px solid var(--border)',
+      borderRadius: 0,
+      fontFamily: 'Share Tech Mono, monospace',
+      fontSize: 10,
+      color: 'var(--text-primary)',
+    },
+    itemStyle: { color: 'var(--accent)' },
+  };
   return (
     <div className="panel panel-cut" style={{ padding: '1rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="label-xs" style={{ marginBottom: '0.6rem', color: 'var(--accent)' }}>
@@ -44,6 +46,20 @@ export function SafetyVariance({ data = [] }) {
 }
 
 export function PeakDangerHours({ data = [] }) {
+  const { mode } = useTheme();
+
+  const chartStyle = {
+    contentStyle: {
+      background: 'var(--bg-panel)',
+      border: '1px solid var(--border)',
+      borderRadius: 0,
+      fontFamily: 'Share Tech Mono, monospace',
+      fontSize: 10,
+      color: 'var(--text-primary)',
+    },
+    itemStyle: { color: 'var(--accent)' },
+  };
+
   return (
     <div className="panel panel-cut" style={{ padding: '1rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="label-xs" style={{ marginBottom: '0.6rem', color: 'var(--amber)' }}>

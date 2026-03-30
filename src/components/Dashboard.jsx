@@ -217,7 +217,7 @@ export default function Dashboard() {
           alignItems: 'center',
           gap: '0.5rem',
         }}>
-          <span>SMARTCITY</span>
+          <span>ORAYA</span>
           <span style={{ color: 'var(--border)' }}>›</span>
           <span style={{ color: 'var(--accent)' }}>{activeTab}</span>
           <div style={{ flex: 1 }} />

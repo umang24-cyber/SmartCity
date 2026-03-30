@@ -37,12 +37,13 @@ export default function Header({ safetyScore, backendOnline, intersectionName, o
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: '0.75rem 1.25rem',
-      background: 'rgba(3, 13, 24, 0.97)',
+      background: 'var(--bg-panel)',
       borderBottom: '1px solid var(--border)',
-      boxShadow: '0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,0.5)',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
       flexShrink: 0,
       zIndex: 50,
       position: 'relative',
+      transition: 'background 0.4s ease, border-color 0.4s ease',
     }}>
       {/* LEFT — Branding */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -62,10 +63,10 @@ export default function Header({ safetyScore, backendOnline, intersectionName, o
             letterSpacing: '0.25em',
             textShadow: '0 0 12px rgba(0,255,136,0.5)',
           }}>
-            SMARTCITY
+            ORAYA
           </div>
           <div className="label-xs" style={{ marginTop: '1px' }}>
-            COMMAND &amp; CONTROL ── {intersectionName || 'MG ROAD & BRIGADE RD'}
+            SAFETY, BEFORE IT'S NEEDED ── {intersectionName || 'MG ROAD & BRIGADE RD'}
           </div>
         </div>
 

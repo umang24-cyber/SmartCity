@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Map, { Source, Layer, Marker, Popup } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { useTheme } from '../context/ThemeContext';
 
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const MAP_STYLE_DARK = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const MAP_STYLE_LIGHT = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 
 // --- Layer Configurations ---
 
@@ -57,6 +59,7 @@ const routeSegmentsConfig = {
 
 export default function Explorer({ intersections = [], incidents = [], safeRoute = null, selectedIntersection = null, backendUrl = "http://localhost:8000" }) {
   const [hoverInfo, setHoverInfo] = useState(null);
+  const { mode } = useTheme();
   
   // Data States
   const [heatmapData, setHeatmapData] = useState(null);
@@ -102,7 +105,8 @@ export default function Explorer({ intersections = [], incidents = [], safeRoute
       <div style={{
         position: 'absolute', top: 12, left: 16, zIndex: 10,
         fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-primary)',
-        background: 'rgba(3,13,24,0.85)', padding: '8px 12px', border: '1px solid var(--accent)'
+        background: 'var(--bg-panel)', padding: '8px 12px', border: '1px solid var(--border)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
       }}>
         <div style={{ fontWeight: 'bold', color: 'var(--accent)', marginBottom: 8 }}>TACTICAL LAYER CONTROLS</div>
         <label style={{ display: 'block', cursor: 'pointer', marginBottom: 4 }}>
@@ -116,7 +120,7 @@ export default function Explorer({ intersections = [], incidents = [], safeRoute
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <Map
           initialViewState={initialViewState}
-          mapStyle={MAP_STYLE}
+          mapStyle={mode === 'dark' ? MAP_STYLE_DARK : MAP_STYLE_LIGHT}
           interactiveLayerIds={['cluster-layer', 'route-segments-layer']}
           onMouseMove={(e) => {
             if (e.features && e.features.length > 0) {
