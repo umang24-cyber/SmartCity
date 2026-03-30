@@ -4,7 +4,7 @@ from typing import List
 from data.mock_data import MOCK_INCIDENTS
 import utils.tigergraph as tg
 
-router = APIRouter()
+router = APIRouter(prefix="/incidents", tags=["Incidents"])
 
 DATA_SOURCE = os.getenv("DATA_SOURCE", "mock")
 

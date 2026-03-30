@@ -30,6 +30,7 @@ const PanelHeader = ({ title, subtitle, badge }) => (
 export default function Dashboard() {
   const {
     data, danger, incidents, safeRoute, cluster, intersections,
+    routeStart, setRouteStart, routeEnd, setRouteEnd,
     backendOnline, isLoading,
     selectedIntersection, setSelectedIntersection,
     selectedWeather, setSelectedWeather,
@@ -148,7 +149,28 @@ export default function Dashboard() {
         );
 
       case 'ROUTE':
-        return <SafeRoutePanel safeRoute={safeRoute} />;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+            <div style={{ flex: 1, minHeight: 300 }}>
+              <Explorer
+                intersections={intersections}
+                incidents={incidents}
+                safeRoute={safeRoute}
+                selectedIntersection={selectedIntersection}
+              />
+            </div>
+            <div style={{ height: '360px', flexShrink: 0 }}>
+              <SafeRoutePanel 
+                safeRoute={safeRoute} 
+                intersections={intersections}
+                routeStart={routeStart}
+                setRouteStart={setRouteStart}
+                routeEnd={routeEnd}
+                setRouteEnd={setRouteEnd}
+              />
+            </div>
+          </div>
+        );
 
       case 'SECTOR':
         return <ClusterPanel cluster={cluster} />;

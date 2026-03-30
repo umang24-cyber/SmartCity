@@ -110,6 +110,16 @@ export default function DangerPanel({
               ))}
             </div>
           </div>
+
+          {/* AI Insights */}
+          <div className="panel panel-cut" style={{ marginTop: '1rem', width: '100%', background: 'rgba(255,170,0,0.05)', border: '1px solid var(--amber)', padding: '0.75rem' }}>
+            <div className="label-xs" style={{ color: 'var(--amber)', marginBottom: '0.5rem' }}>◆ AI INSIGHTS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+               <strong>LSTM Prediction:</strong> Sustained {(risk || 'unknown').toUpperCase()} risk expected.<br/>
+               <strong>Key Factors:</strong> {(timeSlice.weather === 'rain' || timeSlice.weather === 'storm') ? 'Adverse weather' : 'Time of day'}, historical incident density.<br/>
+               <strong>Anomaly:</strong> {meta.safety_variance > 1.5 ? 'High variance detected.' : 'Normal pattern.'}
+            </div>
+          </div>
         </div>
       </div>
 

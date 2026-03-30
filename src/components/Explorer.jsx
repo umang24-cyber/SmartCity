@@ -1,214 +1,168 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Map, { Source, Layer, Marker, Popup } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Using a free tokenless base map style for MapLibre
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
-export default function Explorer({
-  intersections = [],
-  incidents = [],
-  safeRoute = null,
-  selectedIntersection = null,
-}) {
-  const [hoverInfo, setHoverInfo] = React.useState(null);
+// --- Layer Configurations ---
 
-  // Default viewport centered around MG Road & Brigade Rd (INT_001)
+const heatmapLayerConfig = {
+  id: 'danger-heatmap',
+  type: 'heatmap',
+  source: 'heatmap-source',
+  maxzoom: 16,
+  paint: {
+    'heatmap-weight': ['interpolate', ['linear'], ['get', 'danger_score'], 0, 0, 1, 1],
+    'heatmap-color': [
+      'interpolate', ['linear'], ['heatmap-density'],
+      0, 'rgba(0,0,0,0)',
+      0.3, 'rgba(0, 255, 136, 0.5)',   // Safe (Green)
+      0.6, 'rgba(255, 170, 0, 0.7)',   // Moderate (Amber)
+      1.0, 'rgba(255, 51, 68, 0.9)'    // High Danger (Red)
+    ],
+    'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 10, 15, 15, 50],
+    'heatmap-opacity': 0.6
+  }
+};
+
+const clusterLayerConfig = {
+  id: 'cluster-layer',
+  type: 'circle',
+  source: 'cluster-source',
+  paint: {
+    'circle-radius': ['+', 10, ['*', 2, ['get', 'incident_count']]],
+    'circle-color': 'rgba(255, 51, 68, 0.4)',
+    'circle-stroke-color': '#ff3344',
+    'circle-stroke-width': 2,
+    'circle-opacity': 0.8
+  }
+};
+
+const routeSegmentsConfig = {
+  id: 'route-segments-layer',
+  type: 'line',
+  source: 'route-source',
+  layout: {
+    'line-join': 'round',
+    'line-cap': 'round'
+  },
+  paint: {
+    'line-color': ['get', 'color'],
+    'line-width': 6,
+    'line-opacity': 0.85
+  }
+};
+
+// --- Main Component ---
+
+export default function Explorer({ intersections = [], incidents = [], safeRoute = null, selectedIntersection = null, backendUrl = "http://localhost:8000" }) {
+  const [hoverInfo, setHoverInfo] = useState(null);
+  
+  // Data States
+  const [heatmapData, setHeatmapData] = useState(null);
+  const [clusterData, setClusterData] = useState(null);
+  // Intersections are passed from Dashboard but we merge or fallback here if needed,
+  // currently we just use the props
+  
+  const isValidGeoJSON = (d) => d && d.type && (d.type === 'FeatureCollection' || d.type === 'Feature');
+  const safeRouteData = isValidGeoJSON(safeRoute?.segments) ? safeRoute.segments : null;
+  const validHeatmap = isValidGeoJSON(heatmapData) ? heatmapData : null;
+  const validClusters = isValidGeoJSON(clusterData) ? clusterData : null;
+
+  // Toggles
+  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showClusters, setShowClusters] = useState(true);
+  
+  useEffect(() => {
+    // 1. Fetch Heatmap GeoJSON
+    fetch(`${backendUrl}/api/v1/graph/heatmap/geojson`)
+      .then(r => r.json())
+      .then(data => setHeatmapData(data))
+      .catch(e => console.error("Heatmap fetch error:", e));
+
+    // 2. Fetch Clusters GeoJSON
+    fetch(`${backendUrl}/api/v1/cluster-info/geojson`)
+      .then(r => r.json())
+      .then(data => setClusterData(data))
+      .catch(e => console.error("Cluster fetch error:", e));
+
+  }, [backendUrl]);
+
+  // Base Viewport centered around Bengaluru
   const initialViewState = {
-    longitude: 77.5946,
-    latitude: 12.9716,
-    zoom: 14.5,
-    pitch: 45,
-    bearing: 0
+    longitude: 77.5946, latitude: 12.9716, zoom: 14.5, pitch: 45, bearing: 0
   };
 
-  // Convert intersections to GeoJSON features
-  const intersectionGeojson = useMemo(() => {
-    return {
-      type: 'FeatureCollection',
-      features: intersections.map(node => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [node.lng, node.lat] },
-        properties: {
-          id: node.intersection_id,
-          name: node.intersection_name,
-          score: node.baseline_safety_score,
-          isolation: node.isolation_score,
-          cluster_id: node.cluster_id
-        }
-      }))
-    };
-  }, [intersections]);
-
-  // Convert incidents to GeoJSON for Heatmap
-  const incidentGeojson = useMemo(() => {
-    return {
-      type: 'FeatureCollection',
-      features: incidents
-        .filter(inc => inc.lat && inc.lng)
-        .map(inc => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [inc.lng, inc.lat] },
-          properties: {
-            id: inc.incident_id,
-            type: inc.incident_type,
-            severity: inc.severity,
-            verified: inc.verified ? 1 : 0
-          }
-        }))
-    };
-  }, [incidents]);
-
-  // Convert safeRoute to GeoJSON Polyline
-  const routeGeojson = useMemo(() => {
-    if (!safeRoute || !safeRoute.route || safeRoute.route.length === 0) return null;
-    return {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            // Our route points might be dicts with lat/lng
-            coordinates: safeRoute.route.map(pt => [pt.lng, pt.lat])
-          },
-          properties: { id: 'safe-route' }
-        }
-      ]
-    };
-  }, [safeRoute]);
-
-  // Layer Styles
-  const intersectionLayerStyle = {
-    id: 'intersections-layer',
-    type: 'circle',
-    source: 'intersections',
-    paint: {
-      'circle-radius': [
-        'interpolate', ['linear'], ['zoom'],
-        10, 3,
-        15, 6
-      ],
-      'circle-color': [
-        'step',
-        ['get', 'score'],
-        '#ff3344', // <45 is red
-        45, '#ffaa00', // >=45 is orange
-        70, '#00ff88'  // >=70 is green
-      ],
-      'circle-opacity': 0.8,
-      'circle-stroke-width': 1,
-      'circle-stroke-color': '#fff'
-    }
-  };
-
-  const heatmapLayerStyle = {
-    id: 'incidents-heatmap',
-    type: 'heatmap',
-    source: 'incidents',
-    maxzoom: 16,
-    paint: {
-      // Increase heatmap weight based on severity
-      'heatmap-weight': [
-        'interpolate',
-        ['linear'],
-        ['get', 'severity'],
-        1, 0.2,
-        5, 1
-      ],
-      // Color ramp
-      'heatmap-color': [
-        'interpolate',
-        ['linear'],
-        ['heatmap-density'],
-        0, 'rgba(0,0,0,0)',
-        0.2, 'rgba(255,170,0,0.4)',
-        0.5, 'rgba(255,80,0,0.6)',
-        1, 'rgba(255,0,0,0.9)'
-      ],
-      'heatmap-radius': [
-        'interpolate', ['linear'], ['zoom'],
-        10, 15,
-        15, 40
-      ],
-      'heatmap-opacity': 0.7
-    }
-  };
-
-  const routeLayerStyle = {
-    id: 'safe-route-line',
-    type: 'line',
-    source: 'route',
-    layout: {
-      'line-join': 'round',
-      'line-cap': 'round'
-    },
-    paint: {
-      'line-color': '#00ff88',
-      'line-width': 5,
-      'line-opacity': 0.8,
-      'line-dasharray': [1, 2] // animated effect via dash array if possible, or static dashed line
-    }
-  };
-
-  // Find selected intersection marker
-  const selectedNode = intersections.find(n => n.intersection_id === selectedIntersection);
-
-  // Token is no longer required with MapLibre and open map styles
+  const selectedNode = intersections.find(n => n.intersection_id === selectedIntersection || n.zone_id === selectedIntersection);
 
   return (
     <div className="panel panel-cut" style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      {/* HUD overlay header */}
+      
+      {/* ── HUD OVERLAY ── */}
       <div style={{
         position: 'absolute', top: 12, left: 16, zIndex: 10,
-        fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'rgba(0,255,136,0.8)',
-        lineHeight: 1.5, pointerEvents: 'none',
-        background: 'rgba(3,13,24,0.6)', padding: '4px 8px', border: '1px solid var(--border)'
+        fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-primary)',
+        background: 'rgba(3,13,24,0.85)', padding: '8px 12px', border: '1px solid var(--accent)'
       }}>
-        <div style={{ fontWeight: 'bold' }}>TACTICAL MAP VIEW</div>
-        <div>NODES: {intersections.length}</div>
-        <div>REPORTED THREATS: {incidents.length}</div>
+        <div style={{ fontWeight: 'bold', color: 'var(--accent)', marginBottom: 8 }}>TACTICAL LAYER CONTROLS</div>
+        <label style={{ display: 'block', cursor: 'pointer', marginBottom: 4 }}>
+          <input type="checkbox" checked={showHeatmap} onChange={e => setShowHeatmap(e.target.checked)} /> Danger Heatmap
+        </label>
+        <label style={{ display: 'block', cursor: 'pointer' }}>
+          <input type="checkbox" checked={showClusters} onChange={e => setShowClusters(e.target.checked)} /> Incident Clusters
+        </label>
       </div>
 
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <Map
           initialViewState={initialViewState}
           mapStyle={MAP_STYLE}
-          interactiveLayerIds={['intersections-layer']}
+          interactiveLayerIds={['cluster-layer', 'route-segments-layer']}
           onMouseMove={(e) => {
             if (e.features && e.features.length > 0) {
-              const feature = e.features[0];
+              const f = e.features[0];
               setHoverInfo({
-                longitude: e.lngLat.lng,
-                latitude: e.lngLat.lat,
-                name: feature.properties.name,
-                id: feature.properties.id,
-                score: feature.properties.score
+                lng: e.lngLat.lng, lat: e.lngLat.lat,
+                props: f.properties,
+                layerId: f.layer.id
               });
-            } else {
-              setHoverInfo(null);
-            }
+            } else { setHoverInfo(null); }
           }}
           onMouseLeave={() => setHoverInfo(null)}
         >
-          {/* Danger Heatmap Source */}
-          <Source id="incidents" type="geojson" data={incidentGeojson}>
-            <Layer {...heatmapLayerStyle} />
-          </Source>
-
-          {/* Safe Route Source */}
-          {routeGeojson && (
-            <Source id="route" type="geojson" data={routeGeojson}>
-              <Layer {...routeLayerStyle} />
+          {/* ── HEATMAP LAYER ── */}
+          {showHeatmap && validHeatmap && (
+            <Source id="heatmap-source" type="geojson" data={validHeatmap}>
+              <Layer {...heatmapLayerConfig} />
             </Source>
           )}
 
-          {/* Map Dots / Intersections */}
-          <Source id="intersections" type="geojson" data={intersectionGeojson}>
-            <Layer {...intersectionLayerStyle} />
-          </Source>
+          {/* ── CLUSTERS LAYER ── */}
+          {showClusters && validClusters && (
+            <Source id="cluster-source" type="geojson" data={validClusters}>
+              <Layer {...clusterLayerConfig} />
+            </Source>
+          )}
 
-          {/* Highlight Selected node if any */}
+          {/* ── SAFE ROUTE SEGMENTS LAYER ── */}
+          {safeRouteData && (
+            <Source id="route-source" type="geojson" data={safeRouteData}>
+              <Layer {...routeSegmentsConfig} />
+            </Source>
+          )}
+
+          {/* ── INTERSECTION MARKERS ── */}
+          {intersections.map(node => (
+             <Marker key={node.zone_id || node.intersection_id} longitude={node.lng} latitude={node.lat}>
+                <div style={{
+                  width: 12, height: 12, borderRadius: '50%',
+                  background: node.danger_score > 0.7 ? '#ff3344' : node.danger_score > 0.4 ? '#ffaa00' : '#00ff88',
+                  border: '2px solid #fff', boxShadow: '0 0 10px rgba(0,0,0,0.5)'
+                }}/>
+             </Marker>
+          ))}
+
+          {/* ── HIGHLIGHT SELECTED NODE ── */}
           {selectedNode && (
             <Marker longitude={selectedNode.lng} latitude={selectedNode.lat} anchor="bottom">
               <div className="pulse-amber" style={{
@@ -218,25 +172,30 @@ export default function Explorer({
             </Marker>
           )}
 
+          {/* ── INTERACTIVE POPUPS ── */}
           {hoverInfo && (
             <Popup
-              longitude={hoverInfo.longitude}
-              latitude={hoverInfo.latitude}
-              closeButton={false}
-              closeOnClick={false}
-              anchor="top"
-              style={{ padding: 0 }}
+              longitude={hoverInfo.lng} latitude={hoverInfo.lat}
+              closeButton={false} anchor="bottom" offset={15}
             >
               <div style={{
-                background: 'rgba(3,13,24,0.95)',
-                border: '1px solid var(--accent)',
-                padding: '0.4rem 0.65rem',
-                fontFamily: 'var(--font-mono)', fontSize: '0.65rem',
-                color: 'var(--text-primary)',
+                background: 'rgba(10, 15, 25, 0.95)', border: '1px solid var(--accent)',
+                padding: '8px', fontFamily: 'var(--font-mono)', color: '#fff'
               }}>
-                <div style={{ color: 'var(--accent)', marginBottom: 2 }}>{hoverInfo.name}</div>
-                <div style={{ color: 'var(--text-secondary)' }}>ID: {hoverInfo.id}</div>
-                <div style={{ color: 'var(--text-secondary)' }}>SAFETY SCORE: {hoverInfo.score}</div>
+                {hoverInfo.layerId === 'cluster-layer' && (
+                  <>
+                    <strong style={{ color: '#ff3344' }}>⚠️ Alert Cluster</strong><br/>
+                    Count: {hoverInfo.props.incident_count}<br/>
+                    Area Radius: {Math.round(hoverInfo.props.radius_km * 1000)}m
+                  </>
+                )}
+                {hoverInfo.layerId === 'route-segments-layer' && (
+                  <>
+                    <strong style={{ color: hoverInfo.props.color }}>Route Segment</strong><br/>
+                    Threat Level: {(hoverInfo.props.danger_level || 'Unknown').toUpperCase()}<br/>
+                    <span style={{ color: 'var(--accent)' }}>AI Risk: {hoverInfo.props.danger_level === 'high' ? 'HIGH' : hoverInfo.props.danger_level === 'medium' ? 'MEDIUM' : 'LOW'}</span><br/>
+                  </>
+                )}
               </div>
             </Popup>
           )}

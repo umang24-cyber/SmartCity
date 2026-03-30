@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { postReport } from '../api/smartcity';
+import { postReport, analyzeReport } from '../api/smartcity';
 
 const VALID_TYPES = [
   { value: 'poor_lighting',       label: 'POOR LIGHTING' },
@@ -14,10 +14,12 @@ export default function ReportForm() {
     lng: '',
     incident_type: 'poor_lighting',
     severity: 3,
+    description: '',
   });
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [errorMsg, setErrorMsg] = useState('');
   const [incidentId, setIncidentId] = useState('');
+  const [nlpData, setNlpData] = useState(null);
 
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -31,17 +33,32 @@ export default function ReportForm() {
         lng: parseFloat(form.lng),
         incident_type: form.incident_type,
         severity: form.severity,
+        description: form.description,
       };
       const res = await postReport(payload);
       setIncidentId(res.incident_id || 'INC_' + Date.now());
+
+      if (form.description && form.description.length >= 5) {
+        try {
+          const nlpRes = await analyzeReport(form.description);
+          setNlpData(nlpRes);
+        } catch (nlpErr) {
+          console.warn('NLP Analysis skipped:', nlpErr);
+          setNlpData(null);
+        }
+      } else {
+        setNlpData(null);
+      }
+
       setStatus('success');
       setTimeout(() => {
         setStatus(null);
-        setForm({ lat: '', lng: '', incident_type: 'poor_lighting', severity: 3 });
+        setForm({ lat: '', lng: '', incident_type: 'poor_lighting', severity: 3, description: '' });
         setIncidentId('');
-      }, 4000);
+        setNlpData(null);
+      }, 6000);
     } catch (err) {
-      setErrorMsg(err.message || 'DISPATCH FAILED');
+      setErrorMsg(typeof err === 'object' && err !== null && err.message ? err.message : 'DISPATCH FAILED');
       setStatus('error');
       setTimeout(() => setStatus(null), 4000);
     }
@@ -96,7 +113,21 @@ export default function ReportForm() {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
             {incidentId}
           </div>
-          <div className="led led-green pulse-green" style={{ width: 12, height: 12 }} />
+          <div className="led led-green pulse-green" style={{ width: 12, height: 12, marginBottom: 8 }} />
+          
+          {nlpData && (
+            <div style={{ background: 'rgba(0,255,136,0.05)', border: '1px solid var(--border)', padding: '1rem', width: '85%' }}>
+              <div className="label-xs" style={{ color: 'var(--accent)', marginBottom: 6 }}>NLP ANALYSIS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div><strong>Classification:</strong> {nlpData.emergency_level} EMERGENCY</div>
+                <div><strong>Calc Severity:</strong> {(nlpData.severity || 1).toFixed(1)} / 5.0</div>
+                <div><strong>Keywords:</strong> {(nlpData.matched_keywords || []).join(', ') || 'None'}</div>
+                {nlpData.is_duplicate && (
+                  <div style={{ color: 'var(--amber)', marginTop: 4 }}>[!] Possible Duplicate</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {status === 'error' && (
@@ -160,6 +191,18 @@ export default function ReportForm() {
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
+
+        {/* Description textarea */}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <div className="label-xs" style={{ marginBottom: 3 }}>DESCRIPTION (OPTIONAL)</div>
+          <textarea
+            placeholder="Describe the incident for NLP analysis (min 5 chars)..."
+            value={form.description}
+            onChange={e => set('description', e.target.value)}
+            className="sub-input"
+            style={{ flex: 1, minHeight: 60, resize: 'none' }}
+          />
+        </div>
 
         {/* Submit */}
         <button

@@ -1,47 +1,50 @@
-import os
-from fastapi import APIRouter
-from data.mock_data import MOCK_INTERSECTIONS
-import utils.tigergraph as tg
+from fastapi import APIRouter, HTTPException, Query
+from typing import Optional
 
-router = APIRouter()
+router = APIRouter(prefix="/intersections", tags=["Intersections"])
 
-DATA_SOURCE = os.getenv("DATA_SOURCE", "mock")
-
-
-@router.get("/", summary="Get all intersection coordinates (for Mapbox dots layer)")
-async def get_intersections():
+@router.get("/")
+async def get_intersections(
+    lat: Optional[float] = Query(None, description="Center latitude"),
+    lng: Optional[float] = Query(None, description="Center longitude"),
+    radius_km: float = Query(2.0, description="Search radius in km"),
+    limit: int = Query(50, description="Max intersections to return")
+):
     """
-    Returns all intersection coordinates for rendering dots on the map.
-    Group B contract: [{ intersection_id, intersection_name, lat, lng, baseline_safety_score, cluster_id, isolation_score }]
+    Returns intersections with danger scores for map overlay.
+    Each intersection includes lat/lng and a danger_score for heatmap/marker rendering.
     """
+    from db.tigergraph_client import get_client
+    from db.mock_db import get_heatmap_data # using heatmap data as intersections for now
+
     try:
-        if DATA_SOURCE == "tigergraph":
-            raw = await tg.get_all_intersections()
-            return [
-                {
-                    "intersection_id": i.get("intersection_id"),
-                    "intersection_name": i.get("intersection_name"),
-                    "lat": i.get("latitude"),
-                    "lng": i.get("longitude"),
-                    "baseline_safety_score": i.get("baseline_safety_score"),
-                    "cluster_id": i.get("cluster_id"),
-                    "isolation_score": i.get("isolation_score"),
-                }
-                for i in raw
-            ]
-        else:
-            return [
-                {
-                    "intersection_id": i["intersection_id"],
-                    "intersection_name": i["intersection_name"],
-                    "lat": i["latitude"],
-                    "lng": i["longitude"],
-                    "baseline_safety_score": i["baseline_safety_score"],
-                    "cluster_id": i["cluster_id"],
-                    "isolation_score": i["isolation_score"],
-                }
-                for i in MOCK_INTERSECTIONS
-            ]
+        # Instead of get_mock_intersections which isn't defined in the prompt's db.mock_db,
+        # we'll use the heatmap data which returns all zones/intersections
+        intersections = get_heatmap_data()
+        
+        # Simple local filtering if lat/lng is provided
+        if lat is not None and lng is not None:
+             import math
+             def _dist(p1, p2):
+                 R = 6371
+                 dlat = math.radians(p2[0] - p1[0])
+                 dlon = math.radians(p2[1] - p1[1])
+                 a = (math.sin(dlat / 2) * math.sin(dlat / 2) + 
+                      math.cos(math.radians(p1[0])) * math.cos(math.radians(p2[0])) * 
+                      math.sin(dlon / 2) * math.sin(dlon / 2))
+                 c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                 return R * c
+                 
+             intersections = [i for i in intersections if _dist((lat, lng), (i["lat"], i["lng"])) <= radius_km]
+             
+        # Sort by danger and limit
+        intersections = sorted(intersections, key=lambda x: x["danger_score"], reverse=True)[:limit]
+
+        return {
+            "intersections": intersections,
+            "total": len(intersections),
+            "center": {"lat": lat, "lng": lng} if lat and lng else None,
+            "radius_km": radius_km
+        }
     except Exception as e:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail=f"Failed to fetch intersections: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

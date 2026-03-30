@@ -1,1 +1,1 @@
-from routers import danger_score, safe_route, incidents, report, cluster_info, intersections
+# Routers are imported directly in main.py — do not import here to avoid circular imports.

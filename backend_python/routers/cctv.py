@@ -55,7 +55,7 @@ class CCTVResponse(BaseModel):
 async def analyze_cctv_upload(
     file: UploadFile = File(...),
     camera_id: str | None = None,
-    request: Request = None   # 👈 ADD
+    request: Request = None
 ) -> CCTVResponse:
     """Accepts raw image bytes via multipart/form-data upload."""
     try:
@@ -73,9 +73,8 @@ async def analyze_cctv_upload(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Could not read uploaded file: {exc}",
         )
-    models = request.app.state.models
-    cv_bundle = models["cv"]
-    return _run_analysis(image_bytes, camera_id)
+    cv_bundle = request.app.state.models["cv"]
+    return _run_analysis(image_bytes, camera_id, cv_bundle)
 
 
 @router.post(
@@ -84,7 +83,7 @@ async def analyze_cctv_upload(
     summary="Analyze a CCTV frame (base64 JSON)",
     description="Accepts a base64-encoded image in a JSON body. Useful for WebSocket/REST clients.",
 )
-async def analyze_cctv_base64(req: CCTVBase64Request) -> CCTVResponse:
+async def analyze_cctv_base64(req: CCTVBase64Request, request: Request = None) -> CCTVResponse:
     """Accepts base64-encoded image bytes in a JSON body."""
     try:
         image_bytes = base64.b64decode(req.image_b64)
@@ -93,8 +92,8 @@ async def analyze_cctv_base64(req: CCTVBase64Request) -> CCTVResponse:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid base64 image data: {exc}",
         )
-
-    return _run_analysis(image_bytes, req.camera_id)
+    cv_bundle = request.app.state.models["cv"]
+    return _run_analysis(image_bytes, req.camera_id, cv_bundle)
 
 
 @router.post(

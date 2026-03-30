@@ -1,17 +1,19 @@
 """
 backend_python/routers/reports.py
 ===================================
-POST /reports/analyze
+GET  /reports          — list submitted incident reports (from in-memory store)
+POST /reports          — submit a new incident report
+POST /reports/analyze  — NLP analysis of free-form report text
 
-Accepts a free-form incident report string and returns the full NLP
-analysis (sentiment, emotion, severity, credibility, entities, etc.)
-produced by nlp_service → ai/nlp/inference.py.
+Merges the old report.py (incident submission) with this file (NLP analysis)
+so there is ONE authoritative reports router with no duplicate conflicts.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, List
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -20,6 +22,9 @@ from services.nlp_service import analyze_report
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reports", tags=["Incident Reports"])
+
+# ── In-memory incident store (mock mode) ─────────────────────────────────────
+_report_store: List[dict] = []
 
 
 # ── Request / Response models ─────────────────────────────────────────────────
@@ -84,7 +89,63 @@ class ReportAnalysisResponse(BaseModel):
     loader_status: str
 
 
-# ── Endpoint ──────────────────────────────────────────────────────────────────
+# ── Incident submission models (merged from old report.py) ────────────────────
+
+class IncidentReportRequest(BaseModel):
+    lat: float = Field(..., description="Latitude of the incident")
+    lng: float = Field(..., description="Longitude of the incident")
+    incident_type: str = Field(..., description="Type of incident (e.g. 'suspicious_activity')")
+    severity: int = Field(..., ge=1, le=5, description="Severity 1 (low) to 5 (critical)")
+    source: str = Field(default="user_report")
+    description: str | None = Field(default=None, description="Optional free-text description")
+
+
+class IncidentReportResponse(BaseModel):
+    success: bool
+    message: str
+    incident_id: str
+
+
+# ── Incident Endpoints ────────────────────────────────────────────────────────
+
+@router.get(
+    "/",
+    summary="List all submitted incident reports",
+    description="Returns all incident reports stored in the in-memory store (mock mode).",
+)
+async def list_reports() -> list:
+    return _report_store
+
+
+@router.post(
+    "/",
+    response_model=IncidentReportResponse,
+    status_code=201,
+    summary="Submit a new incident report",
+    description="Creates a new incident report and stores it in-memory.",
+)
+async def submit_report(body: IncidentReportRequest) -> IncidentReportResponse:
+    incident = {
+        "incident_id": f"INC_{int(datetime.now(timezone.utc).timestamp() * 1000)}",
+        "incident_type": body.incident_type,
+        "severity": body.severity,
+        "reported_at": datetime.now(timezone.utc).isoformat(),
+        "verified": False,
+        "source": body.source,
+        "lat": body.lat,
+        "lng": body.lng,
+        "description": body.description,
+    }
+    _report_store.append(incident)
+    logger.info("Incident report received: %s", incident["incident_id"])
+    return IncidentReportResponse(
+        success=True,
+        message="Incident reported successfully",
+        incident_id=incident["incident_id"],
+    )
+
+
+# ── NLP Analysis Endpoint ──────────────────────────────────────────────────────
 
 @router.post(
     "/analyze",

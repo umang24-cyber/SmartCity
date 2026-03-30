@@ -4,7 +4,7 @@ from data.mock_data import MOCK_INTERSECTIONS, MOCK_SAFETY_FEATURES, get_current
 from utils.safety_engine import compute_safety_score
 import utils.tigergraph as tg
 
-router = APIRouter()
+router = APIRouter(prefix="/danger-score", tags=["Danger Score"])
 
 DATA_SOURCE = os.getenv("DATA_SOURCE", "mock")
 

@@ -9,6 +9,8 @@ export const useTigerGraph = () => {
   const [danger, setDanger]             = useState(null);
   const [incidents, setIncidents]       = useState([]);
   const [safeRoute, setSafeRoute]       = useState(null);
+  const [routeStart, setRouteStart]     = useState(null);
+  const [routeEnd, setRouteEnd]         = useState(null);
   const [cluster, setCluster]           = useState(null);
   const [intersections, setIntersections] = useState([]);
   const [backendOnline, setBackendOnline] = useState(null); // null=checking, true, false
@@ -46,12 +48,17 @@ export const useTigerGraph = () => {
   // ── Load safe route ───────────────────────────────────────────
   const loadRoute = useCallback(async () => {
     try {
-      const d = await fetchSafeRoute();
-      setSafeRoute(d);
+      if (routeStart && routeEnd) {
+        const d = await fetchSafeRoute(routeStart.lat, routeStart.lng, routeEnd.lat, routeEnd.lng);
+        setSafeRoute(d);
+      } else {
+        const d = await fetchSafeRoute();
+        setSafeRoute(d);
+      }
     } catch {
       setSafeRoute(MOCK_ROUTE);
     }
-  }, []);
+  }, [routeStart, routeEnd]);
 
   // ── Load cluster info ─────────────────────────────────────────
   const loadCluster = useCallback(async () => {
@@ -97,6 +104,9 @@ export const useTigerGraph = () => {
   // ── Re-fetch incidents when filter changes ────────────────────
   useEffect(() => { if (!isLoading) loadIncidents(); }, [verifiedOnly]);
 
+  // ── Re-fetch route when start/end changes ─────────────────────
+  useEffect(() => { if (!isLoading) loadRoute(); }, [routeStart, routeEnd]);
+
   // ── Auto-refresh every 30s ────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(() => {
@@ -141,6 +151,8 @@ export const useTigerGraph = () => {
     selectedIntersection, setSelectedIntersection,
     selectedWeather, setSelectedWeather,
     verifiedOnly, setVerifiedOnly,
+    routeStart, setRouteStart,
+    routeEnd, setRouteEnd,
     refresh: () => { loadDanger(); loadIncidents(); loadRoute(); loadCluster(); loadIntersections(); }
   };
 };

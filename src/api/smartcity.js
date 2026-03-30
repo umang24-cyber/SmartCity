@@ -14,19 +14,33 @@ export async function fetchIncidents(verifiedOnly = false) {
   return apiFetch(`${BASE}/incidents/?verified=${verifiedOnly}`);
 }
 
-export async function postReport({ lat, lng, incident_type, severity }) {
-  const res = await fetch(`${BASE}/report/`, {
+export async function postReport({ lat, lng, incident_type, severity, description }) {
+  const res = await fetch(`${BASE}/api/v1/reports/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lat, lng, incident_type, severity }),
+    body: JSON.stringify({ lat, lng, incident_type, severity, description }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
 
-export async function fetchSafeRoute(start = 'INT_001', end = 'INT_005') {
-  return apiFetch(`${BASE}/safe-route/?start=${start}&end=${end}`);
+export async function analyzeReport(text) {
+  const res = await fetch(`${BASE}/api/v1/reports/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}
+
+export async function fetchSafeRoute(start_lat, start_lng, end_lat, end_lng) {
+  if (!start_lat) {
+    return apiFetch(`${BASE}/safe-route/?start_lat=12.9716&start_lng=77.5946&end_lat=12.9738&end_lng=77.5965`);
+  }
+  return apiFetch(`${BASE}/safe-route/?start_lat=${start_lat}&start_lng=${start_lng}&end_lat=${end_lat}&end_lng=${end_lng}`);
 }
 
 export async function fetchClusterInfo(cluster_id = 1) {
