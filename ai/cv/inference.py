@@ -410,14 +410,32 @@ class CrowdAnalysisPipeline:
 
     @staticmethod
     def _decode(image_bytes: bytes) -> np.ndarray:
-        """Decode raw bytes → BGR numpy array."""
-        arr = np.frombuffer(image_bytes, dtype=np.uint8)
-        frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        if frame is None:
-            # Fallback via PIL for edge-case formats (HEIC, TIFF …)
+        import base64
+
+        try:
+            # 🔍 DEBUG (keep for now)
+            print("FIRST BYTES:", image_bytes[:20])
+
+            # 🔥 Detect base64 (THIS IS YOUR CASE)
+            if image_bytes.startswith(b"/9j") or image_bytes.startswith(b"iVBOR"):
+                print("⚠️ Base64 detected → decoding")
+                image_bytes = base64.b64decode(image_bytes)
+
+            # Try OpenCV decode
+            arr = np.frombuffer(image_bytes, dtype=np.uint8)
+            frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
+            if frame is not None:
+                return frame
+
+            # 🔁 Fallback to PIL
+            print("⚠️ OpenCV failed → trying PIL")
             pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-            frame   = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-        return frame
+            return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+
+        except Exception as e:
+            print("❌ FINAL DECODE ERROR:", e)
+        raise ValueError("Invalid image input")
 
     @staticmethod
     def _compute_safety(density: str, anomalies: list[dict]) -> int:

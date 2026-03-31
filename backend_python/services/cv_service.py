@@ -65,6 +65,9 @@ def analyze_frame(
     bundle = bundle or get_cv_bundle()
 
     try:
+        print("DEBUG → image_bytes type:", type(image_bytes))
+        print("DEBUG → image_bytes length:", len(image_bytes))
+        
         raw = bundle["predict_fn"](image_bytes)
     except Exception as exc:
         logger.error("CV predict_fn raised: %s", exc, exc_info=True)
