@@ -1,0 +1,91 @@
+/* RBAC Dashboard Layout & Shared Components */
+.rbac-layout {
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+}
+
+.site-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem 2rem;
+  background: var(--bg-card);
+  border-bottom: 2px solid var(--accent-cyan);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 2px;
+}
+
+.dot {
+  color: var(--accent-cyan);
+}
+
+.overlay-panel {
+  position: absolute;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent-cyan);
+  box-shadow: 0 0 20px rgba(0,0,0,0.8);
+  border-radius: 8px;
+  padding: 1.5rem;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-panel {
+  width: 320px;
+  overflow-y: auto;
+}
+
+.bottom-panel {
+  width: 100%;
+}
+
+.panel-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.text-cyan { color: var(--accent-cyan); }
+.text-pink { color: var(--accent-pink); }
+.text-safe { color: var(--safe); }
+.text-medium { color: var(--medium); }
+.text-danger { color: var(--danger); }
+
+.bg-safe { background-color: var(--safe); }
+.bg-medium { background-color: var(--medium); }
+.bg-danger { background-color: var(--danger); }
+
+.border-safe { border-color: var(--safe); }
+.border-medium { border-color: var(--medium); }
+.border-danger { border-color: var(--danger); }
+
+.margin-t-4 { margin-top: 1rem; }
+
+/* Map Container needs to sit below header */
+.map-container {
+  position: absolute;
+  top: 0; 
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1; /* MapboxView might have its own z-indices */
+}

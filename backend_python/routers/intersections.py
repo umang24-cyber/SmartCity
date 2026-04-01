@@ -14,8 +14,8 @@ async def get_intersections(
     Returns intersections with danger scores for map overlay.
     Each intersection includes lat/lng and a danger_score for heatmap/marker rendering.
     """
-    from db.tigergraph_client import get_client
-    from db.mock_db import get_heatmap_data # using heatmap data as intersections for now
+    from custom_db.tigergraph_client import get_client
+    from custom_db.mock_db import get_heatmap_data # using heatmap data as intersections for now
 
     try:
         # Instead of get_mock_intersections which isn't defined in the prompt's db.mock_db,

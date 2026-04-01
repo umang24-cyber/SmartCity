@@ -36,7 +36,7 @@ export default function CustomCursor() {
     };
 
     const onMouseDown = (e) => {
-      if (e.target.tagName === 'CANVAS' && e.target.classList.contains('maplibregl-canvas')) {
+      if (e.target.closest('.leaflet-container')) {
         setCursorState('drag');
       } else {
         // Just a normal click flash, we can briefly set drag or keep hover

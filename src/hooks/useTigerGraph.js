@@ -91,12 +91,30 @@ export const useTigerGraph = () => {
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
-      await checkHealth();
-      await Promise.allSettled([loadDanger(), loadIncidents(), loadRoute(), loadCluster(), loadIntersections()]);
+      
+      // Start all in parallel - no more blocking on checkHealth
+      const allTasks = [
+        checkHealth(),
+        loadDanger(),
+        loadIncidents(),
+        loadRoute(),
+        loadCluster(),
+        loadIntersections()
+      ];
+
+      // Add a 3s max timeout for initial loading UI
+      // Even if some requests are pending, we want the UI reachable
+      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000));
+      
+      await Promise.race([
+        Promise.allSettled(allTasks),
+        timeoutPromise
+      ]);
+
       setIsLoading(false);
     };
     init();
-  }, []);
+  }, [checkHealth, loadDanger, loadIncidents, loadRoute, loadCluster, loadIntersections]);
 
   // ── Re-fetch danger when intersection/weather changes ─────────
   useEffect(() => { if (!isLoading) loadDanger(); }, [selectedIntersection, selectedWeather]);

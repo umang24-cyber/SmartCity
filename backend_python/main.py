@@ -19,6 +19,9 @@ Router map (all prefixed with /api/v1):
 import logging
 from contextlib import asynccontextmanager
 
+import random
+from typing import Any
+from custom_db.persistence import load_all_data, save_data
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,10 +34,23 @@ from ai.anomaly.loader import get_anomaly_bundle
 
 # ── Routers ────────────────────────────────────────────────────────────────────
 # AI-powered routers (use app.state.models)
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from middleware.auth import create_access_token, get_current_user
+from custom_db.users import (
+    get_user,
+    pwd_context,
+    create_user,
+    upsert_google_user,
+    validate_supervisor_access_key,
+)
 from routers import danger, cctv, anomaly, reports
 
 # Data / graph routers (use mock_data or TigerGraph directly)
 from routers import safe_route, intersections, danger_score, incidents, cluster_info, graph
+
+# RBAC Routers
+from routers import auth, citizen, supervisor, officer, dev
 
 # Setup basic logging
 logging.basicConfig(
@@ -44,37 +60,46 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def _load_models_task(app: FastAPI):
+    """Background task to load AI models without blocking startup."""
+    logger.info("🚀 Background loading of Smart City AI Services initialized...")
+    
+    try:
+        logger.info("Loading LSTM...")
+        app.state.models["lstm"] = get_lstm_bundle()
+        logger.info("✅ LSTM loaded.")
+
+        logger.info("Loading CV...")
+        app.state.models["cv"] = get_cv_bundle()
+        logger.info("✅ CV loaded.")
+
+        logger.info("Loading NLP...")
+        app.state.models["nlp"] = get_nlp_bundle()
+        logger.info("✅ NLP loaded.")
+
+        logger.info("Loading Anomaly...")
+        app.state.models["anomaly"] = get_anomaly_bundle()
+        logger.info("✅ Anomaly loaded.")
+
+        logger.info("🎉 All AI models loaded and ready in background.")
+    except Exception as e:
+        logger.error(f"❌ Error during background model loading: {e}", exc_info=True)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Lifecycle manager for the FastAPI app.
-    Loads all AI models sequentially ONCE on startup.
+    Loads all AI models in a background task to avoid blocking startup.
     """
-    logger.info("🚀 Starting up Smart City AI Services...")
-
+    import asyncio
     app.state.models = {}
-
-    logger.info("Loading LSTM...")
-    app.state.models["lstm"] = get_lstm_bundle()
-    logger.info("✅ LSTM loaded.")
-
-    logger.info("Loading CV...")
-    app.state.models["cv"] = get_cv_bundle()
-    logger.info("✅ CV loaded.")
-
-    logger.info("Loading NLP...")
-    app.state.models["nlp"] = get_nlp_bundle()
-    logger.info("✅ NLP loaded.")
-
-    logger.info("Loading Anomaly...")
-    app.state.models["anomaly"] = get_anomaly_bundle()
-    logger.info("✅ Anomaly loaded.")
-
-    logger.info("🎉 All AI models loaded and ready.")
-
-    yield  # Application runs here
-
-    logger.info("Shutting down Smart City AI Services...")
+    
+    # Start background loading
+    task = asyncio.create_task(_load_models_task(app))
+    
+    yield  # Application starts serving here
+    
+    task.cancel()
     app.state.models.clear()
 
 
@@ -130,8 +155,13 @@ app.include_router(intersections.router, prefix="/api/v1")
 app.include_router(incidents.router,    prefix="/api/v1")
 app.include_router(cluster_info.router, prefix="/api/v1")
 app.include_router(graph.router,        prefix="/api/v1")
-app.include_router(danger_score.router)
-app.include_router(incidents.router)
+
+# RBAC Endpoints
+app.include_router(auth.router,         prefix="/api/v1")
+app.include_router(citizen.router,      prefix="/api/v1")
+app.include_router(supervisor.router,   prefix="/api/v1")
+app.include_router(officer.router,      prefix="/api/v1")
+app.include_router(dev.router,          prefix="/api/v1")
 
 
 @app.get("/health", tags=["System"])

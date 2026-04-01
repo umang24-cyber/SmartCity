@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
-from data.mock_data import MOCK_INCIDENTS
+from custom_db.mock_db import MOCK_INCIDENTS
 import utils.tigergraph as tg
 
 router = APIRouter(prefix="/incidents", tags=["Incidents"])

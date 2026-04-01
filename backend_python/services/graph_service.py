@@ -1,8 +1,8 @@
 # backend_python/services/graph_service.py
 import os
 from typing import List, Dict, Any
-from db.tigergraph_client import get_client
-from db.mock_db import get_heatmap_data as mock_get_heatmap, get_mock_zone
+from custom_db.tigergraph_client import get_client
+from custom_db.mock_db import get_heatmap_data as mock_get_heatmap, get_mock_zone
 
 DATA_SOURCE = os.getenv("DATA_SOURCE", "mock")
 

@@ -1,5 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600;700&family=Syne:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+@import "./pages/RBAC.css";
 
 /* ════════════════════════════════════════════════════════════
    SUBMARINE CONTROL TERMINAL — DESIGN SYSTEM
@@ -8,18 +9,30 @@
 :root {
   --bg-primary:    #030d18;
   --bg-secondary:  rgba(4, 18, 34, 0.85);
-  --bg-panel:      rgba(5, 22, 42, 0.9);
+  --bg-panel:      #0d1117;
+  --bg-base:       #080b12;
+  --bg-card:       #111827;
+
   --text-primary:  #ffffff; /* Brighter for readability */
   --text-secondary: #8ab49c; /* Brighter for readability */
+  
   --amber:         #ffaa00;
   --amber-glow:    rgba(255, 170, 0, 0.3);
   --red-alert:     #ff3344;
   --red-glow:      rgba(255, 51, 68, 0.35);
+
   --font-mono:     'Share Tech Mono', monospace;
   --font-display:  'Orbitron', monospace;
   --font-body:     'Inter', sans-serif;
 
-  /* Default Submarine Theme */
+  /* Custom RBAC theme variables */
+  --accent-cyan:   #00d4ff;
+  --accent-pink:   #ff4d8f;
+  --safe:          #00e676;
+  --medium:        #ffb300;
+  --danger:        #ff3d5a;
+
+  /* Default Submarine Theme (Legacy) */
   --accent:        #00ff88;
   --accent-dim:    #00cc6a;
   --accent-glow:   rgba(0, 255, 136, 0.25);

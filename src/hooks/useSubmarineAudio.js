@@ -192,8 +192,9 @@ export function useSubmarineAudio() {
     };
 
     const handleMouseDown = (e) => {
-      // If it's the maplibre canvas, it's a drag start
-      if (e.target.tagName === 'CANVAS' && e.target.classList.contains('maplibregl-canvas')) {
+      // If it's a leaflet map interaction
+      const isMap = e.target.closest('.leaflet-container');
+      if (isMap) {
         playSynthesizedSound('drag');
       } else {
         playSynthesizedSound('click');

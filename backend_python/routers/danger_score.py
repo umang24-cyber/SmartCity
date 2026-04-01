@@ -1,6 +1,6 @@
 import os
 from fastapi import APIRouter, HTTPException, Query
-from data.mock_data import MOCK_INTERSECTIONS, MOCK_SAFETY_FEATURES, get_current_time_slice
+from custom_db.mock_db import MOCK_INTERSECTIONS, MOCK_SAFETY_FEATURES
 from utils.safety_engine import compute_safety_score
 import utils.tigergraph as tg
 

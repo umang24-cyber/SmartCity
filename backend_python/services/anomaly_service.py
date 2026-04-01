@@ -13,8 +13,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ai.anomaly.loader import get_anomaly_bundle
-
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +43,8 @@ def detect_anomaly(
         "loader_status": str,       # "loaded" | "fallback"
     }
     """
-    bundle = bundle or get_anomaly_bundle()
+    if bundle is None:
+        raise ValueError("Anomaly bundle is required")
 
     # Adapt flat list → recent_data format expected by the z-score detector
     # Each row needs "incident_count" and "crowd" keys. We use the value for

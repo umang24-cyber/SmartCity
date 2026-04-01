@@ -13,18 +13,17 @@ import logging
 import time
 from typing import Any
 
-from ai.nlp.loader import get_nlp_bundle
-
 logger = logging.getLogger(__name__)
 
 
-def analyze_report(text: str) -> dict[str, Any]:
+def analyze_report(text: str, bundle: dict[str, Any] | None = None) -> dict[str, Any]:
     """
     Run the full NLP pipeline on a raw incident report string.
 
     Args
     ----
     text : Free-form incident report text (any length).
+    bundle : AI model bundle. Required.
 
     Returns
     -------
@@ -40,8 +39,10 @@ def analyze_report(text: str) -> dict[str, Any]:
     """
     if not text or not text.strip():
         raise ValueError("Report text must be a non-empty string.")
+    
+    if bundle is None:
+        raise ValueError("NLP bundle is required")
 
-    bundle = get_nlp_bundle()
     t0 = time.perf_counter()
 
     try:
