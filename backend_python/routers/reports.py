@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from typing import Any, List
-
+from fastapi import Depends, Request
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -157,7 +157,10 @@ async def submit_report(body: IncidentReportRequest) -> IncidentReportResponse:
         "extracted entities, and an auto-generated response message."
     ),
 )
-async def analyze_incident_report(req: ReportRequest) -> ReportAnalysisResponse:
+async def analyze_incident_report(
+    req: ReportRequest,
+    request: Request
+) -> ReportAnalysisResponse:
     if not req.text.strip():
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -170,19 +173,29 @@ async def analyze_incident_report(req: ReportRequest) -> ReportAnalysisResponse:
         len(req.text),
     )
 
-    try:
-        result = analyze_report(req.text)
-    except ValueError as exc:
+    nlp_bundle = request.app.state.models.get("nlp")
+
+    if nlp_bundle is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
+            status_code=500,
+            detail="NLP model not loaded"
         )
-    except Exception as exc:
-        logger.error("NLP analysis failed: %s", exc, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"NLP analysis failed: {exc}",
-        )
+
+        try:
+            result = analyze_report(req.text, bundle=nlp_bundle)
+
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            )
+
+        except Exception as exc:
+            logger.error("NLP analysis failed: %s", exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"NLP analysis failed: {exc}",
+            )
 
     response = ReportAnalysisResponse(
         report_id=req.report_id,
