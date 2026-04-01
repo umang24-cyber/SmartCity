@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 export default function ThemeTransition() {

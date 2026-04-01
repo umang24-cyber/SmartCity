@@ -95,17 +95,35 @@ export const useTigerGraph = () => {
       await Promise.allSettled([loadDanger(), loadIncidents(), loadRoute(), loadCluster(), loadIntersections()]);
       setIsLoading(false);
     };
-    init();
-  }, []);
+    void init();
+  }, [checkHealth, loadDanger, loadIncidents, loadRoute, loadCluster, loadIntersections]);
 
   // ── Re-fetch danger when intersection/weather changes ─────────
-  useEffect(() => { if (!isLoading) loadDanger(); }, [selectedIntersection, selectedWeather]);
+  useEffect(() => {
+    if (isLoading) return;
+    const handle = setTimeout(() => {
+      void loadDanger();
+    }, 0);
+    return () => clearTimeout(handle);
+  }, [isLoading, loadDanger]);
 
   // ── Re-fetch incidents when filter changes ────────────────────
-  useEffect(() => { if (!isLoading) loadIncidents(); }, [verifiedOnly]);
+  useEffect(() => {
+    if (isLoading) return;
+    const handle = setTimeout(() => {
+      void loadIncidents();
+    }, 0);
+    return () => clearTimeout(handle);
+  }, [isLoading, loadIncidents]);
 
   // ── Re-fetch route when start/end changes ─────────────────────
-  useEffect(() => { if (!isLoading) loadRoute(); }, [routeStart, routeEnd]);
+  useEffect(() => {
+    if (isLoading) return;
+    const handle = setTimeout(() => {
+      void loadRoute();
+    }, 0);
+    return () => clearTimeout(handle);
+  }, [isLoading, loadRoute]);
 
   // ── Auto-refresh every 30s ────────────────────────────────────
   useEffect(() => {

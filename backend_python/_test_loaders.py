@@ -16,10 +16,10 @@ FAIL = []
 def check(name, fn):
     try:
         fn()
-        print(f"  ✅  {name}")
+        print(f"  [PASS] {name}")
         PASS.append(name)
     except Exception as e:
-        print(f"  ❌  {name}: {e}")
+        print(f"  [FAIL] {name}: {e}")
         import traceback; traceback.print_exc()
         FAIL.append(name)
 
@@ -120,4 +120,4 @@ if FAIL:
     sys.exit(1)
 else:
     print("  Anomaly : SKIPPED (no model — z-score fallback is live by design)")
-    print("  ALL PHASE 2 LOADERS PASSED ✅")
+    print("  ALL PHASE 2 LOADERS PASSED")

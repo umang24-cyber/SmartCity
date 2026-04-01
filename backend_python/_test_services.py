@@ -7,11 +7,11 @@ PASS, FAIL = [], []
 def check(name, fn):
     try:
         fn()
-        print(f"  ✅  {name}")
+        print(f"  [PASS] {name}")
         PASS.append(name)
     except Exception as e:
         import traceback
-        print(f"  ❌  {name}: {e}")
+        print(f"  [FAIL] {name}: {e}")
         traceback.print_exc()
         FAIL.append(name)
 
@@ -115,7 +115,7 @@ def t_agg_all_skipped():
 
 check("aggregate_danger full schema", t_agg_full)
 check("aggregate_danger weight redistribution (no cv)", t_agg_partial_no_cv)
-check("aggregate_danger all-skipped → 0.5", t_agg_all_skipped)
+check("aggregate_danger all-skipped to 0.5", t_agg_all_skipped)
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 print(f"\n{'='*55}")
@@ -125,4 +125,4 @@ if FAIL:
     print(f"  FAILED : {FAIL}")
     sys.exit(1)
 else:
-    print("  PHASE 3 SERVICES PASSED ✅")
+    print("  PHASE 3 SERVICES PASSED")

@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useTheme } from '../context/ThemeContext';
 
 export default function CustomCursor() {
   const [cursorState, setCursorState] = useState('default'); 

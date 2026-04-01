@@ -1,10 +1,7 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
-import { useTheme } from '../context/ThemeContext';
 
 export function SafetyVariance({ data = [] }) {
-  const { mode } = useTheme();
-
   const chartStyle = {
     contentStyle: {
       background: 'var(--bg-panel)',
@@ -46,8 +43,6 @@ export function SafetyVariance({ data = [] }) {
 }
 
 export function PeakDangerHours({ data = [] }) {
-  const { mode } = useTheme();
-
   const chartStyle = {
     contentStyle: {
       background: 'var(--bg-panel)',

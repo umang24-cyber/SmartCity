@@ -1,12 +1,63 @@
 import os
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
-from data.mock_data import MOCK_INTERSECTIONS, MOCK_SAFETY_FEATURES, get_current_time_slice
+from db.mock_db import get_all_mock_zones
 from utils.safety_engine import compute_safety_score
 import utils.tigergraph as tg
 
 router = APIRouter(prefix="/danger-score", tags=["Danger Score"])
 
 DATA_SOURCE = os.getenv("DATA_SOURCE", "mock")
+
+
+def _mock_intersections() -> list[dict]:
+    zones = get_all_mock_zones()
+    intersections = []
+    for zone in zones:
+        zone_danger = float(zone.get("danger_score", 0.35))
+        baseline = max(35.0, min(95.0, round((1.0 - zone_danger) * 100.0, 2)))
+        intersections.append(
+            {
+                "intersection_id": zone.get("zone_id", "INT_UNKNOWN").upper(),
+                "intersection_name": zone.get("name", zone.get("zone_id", "Unknown Zone")),
+                "lat": zone.get("lat"),
+                "lng": zone.get("lng"),
+                "baseline_safety_score": baseline,
+                "peak_danger_hours": [21, 22, 23, 0, 1],
+                "weekend_multiplier": 0.92,
+                "weather_sensitivity": 0.45,
+                "isolation_score": max(0.1, min(0.9, zone_danger)),
+                "safety_variance": 12 + (zone_danger * 20),
+                "betweenness_score": max(0.1, min(0.8, 1.0 - zone_danger)),
+            }
+        )
+    return intersections
+
+
+def _mock_safety_features() -> list[dict]:
+    return [
+        {"feature_type": "streetlight", "is_functional": True, "lux_level": 42},
+        {
+            "feature_type": "cctv",
+            "is_functional": True,
+            "effectiveness_by_hour": {h: (0.82 if 7 <= h <= 22 else 0.58) for h in range(24)},
+        },
+        {"feature_type": "panic_button", "is_functional": True},
+    ]
+
+
+def _current_time_slice(weather: str) -> dict:
+    now = datetime.now()
+    return {
+        "ts_hour": now.hour,
+        "hour": now.hour,
+        "weather_condition": weather,
+        "is_weekend": now.weekday() >= 5,
+        "is_holiday": False,
+        "special_event": "none",
+        "aggregate_safety": 68,
+        "moon_phase": 0.5,
+    }
 
 
 def _normalize_intersection(intersection: dict) -> dict:
@@ -56,12 +107,13 @@ async def get_danger_score(
             time_slice = await tg.get_current_time_slice()
             time_slice["weather_condition"] = weather
         else:
+            intersections = _mock_intersections()
             intersection = next(
-                (i for i in MOCK_INTERSECTIONS if i["intersection_id"] == intersection_id),
-                MOCK_INTERSECTIONS[0],
+                (i for i in intersections if i["intersection_id"] == intersection_id),
+                intersections[0],
             )
-            features = MOCK_SAFETY_FEATURES
-            time_slice = get_current_time_slice()
+            features = _mock_safety_features()
+            time_slice = _current_time_slice(weather)
 
         intersection = _normalize_intersection(intersection)
         time_slice = _normalize_time_slice(time_slice, weather)

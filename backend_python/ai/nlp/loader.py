@@ -184,6 +184,7 @@ def load_nlp_pipeline() -> dict[str, Any]:
 
     _bundle = {
         "model": module.analyze_report,
+        "analyze_report": module.analyze_report,
         "module":         module,
         "status":         "loaded",
         "reason":         "",
@@ -194,6 +195,7 @@ def load_nlp_pipeline() -> dict[str, Any]:
 def _fallback(reason: str) -> dict[str, Any]:
     return {
         "model": _mock_analyze_report,
+        "analyze_report": _mock_analyze_report,
         "module":         None,
         "status":         "fallback",
         "reason":         reason,

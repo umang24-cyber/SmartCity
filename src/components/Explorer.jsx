@@ -109,6 +109,7 @@ export default function Explorer({ intersections = [], incidents = [], safeRoute
         boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
       }}>
         <div style={{ fontWeight: 'bold', color: 'var(--accent)', marginBottom: 8 }}>TACTICAL LAYER CONTROLS</div>
+        <div style={{ marginBottom: 8 }}>Live incidents: {incidents.length}</div>
         <label style={{ display: 'block', cursor: 'pointer', marginBottom: 4 }}>
           <input type="checkbox" checked={showHeatmap} onChange={e => setShowHeatmap(e.target.checked)} /> Danger Heatmap
         </label>

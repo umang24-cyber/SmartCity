@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
-export const themes = [
+const themes = [
   { id: 'submarine', name: 'Submarine Green', color: '#00ff88' },
   { id: 'sakura', name: 'Sakura Blossoms', color: '#ec4899' },
   { id: 'midnight-neon', name: 'Midnight Neon', color: '#3b82f6' },
@@ -48,7 +48,7 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', currentTheme);
     document.documentElement.setAttribute('data-mode', mode);
-  }, []);
+  }, [currentTheme, mode]);
 
   return (
     <ThemeContext.Provider value={{ 

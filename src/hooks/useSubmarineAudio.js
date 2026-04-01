@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 export function useSubmarineAudio() {
   const audioCtxRef = useRef(null);
-  const { mode, currentTheme } = useTheme();
+  const { mode } = useTheme();
 
   // Initialize synth on first user interaction to bypass browser autoplay policies
   useEffect(() => {
@@ -98,7 +98,7 @@ export function useSubmarineAudio() {
     };
   }, []);
 
-  const playSynthesizedSound = (type) => {
+  const playSynthesizedSound = useCallback((type) => {
     const ctx = audioCtxRef.current;
     if (!ctx || ctx.state !== 'running') return;
 
@@ -167,7 +167,7 @@ export function useSubmarineAudio() {
       osc.start(t);
       osc.stop(t + 0.05);
     }
-  };
+  }, [mode]);
 
   // Attach global event listeners
   useEffect(() => {
@@ -201,7 +201,7 @@ export function useSubmarineAudio() {
     };
 
     let scrollTimeout;
-    const handleWheel = (e) => {
+    const handleWheel = () => {
       if (!scrollTimeout) {
         playSynthesizedSound('scroll');
         scrollTimeout = setTimeout(() => {
@@ -219,6 +219,6 @@ export function useSubmarineAudio() {
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('wheel', handleWheel);
     };
-  }, [mode, currentTheme]); // Re-bind when theme changes to update pitchMod
+  }, [playSynthesizedSound]);
 
 }

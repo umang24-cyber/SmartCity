@@ -1,25 +1,43 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 export default function ModeSlider() {
   const { mode, toggleMode, isTransitioning } = useTheme();
   const [isDragging, setIsDragging] = useState(false);
+  const [trackWidth, setTrackWidth] = useState(168);
   const trackRef = useRef(null);
 
   // Constants for slider (width and track)
   const TRACK_HEIGHT = 24;
   const THUMB_SIZE = 20;
 
-  const handleModeChange = (targetMode) => {
+  const handleModeChange = useCallback((targetMode) => {
     if (mode !== targetMode && !isTransitioning) {
       toggleMode();
     }
-  };
+  }, [mode, isTransitioning, toggleMode]);
 
-  const onMouseDown = (e) => {
+  const onMouseDown = () => {
     if (isTransitioning) return;
     setIsDragging(true);
   };
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const updateWidth = () => setTrackWidth(track.offsetWidth || 168);
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(track);
+    window.addEventListener('resize', updateWidth);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, []);
 
   useEffect(() => {
     const onMouseMove = (e) => {
@@ -49,7 +67,9 @@ export default function ModeSlider() {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, [isDragging, mode, isTransitioning]);
+  }, [isDragging, handleModeChange]);
+
+  const thumbOffset = mode === 'dark' ? 2 : trackWidth - THUMB_SIZE - 6;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
@@ -95,7 +115,7 @@ export default function ModeSlider() {
           background: 'var(--accent)', 
           borderRadius: 2, 
           boxShadow: `0 0 12px var(--accent-glow), inset 0 0 4px rgba(255,255,255,0.4)`,
-          transform: `translateX(${mode === 'dark' ? 2 : (trackRef.current?.offsetWidth ?? 168) - THUMB_SIZE - 6}px)`,
+          transform: `translateX(${thumbOffset}px)`,
           transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
           display: 'flex',
           alignItems: 'center',

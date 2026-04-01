@@ -13,7 +13,7 @@ const TABS = [
 ];
 
 export default function Sidebar({ activeTab, onTabChange, threatCount = 0 }) {
-  const { currentTheme, changeTheme, themes, mode } = useTheme();
+  const { currentTheme, changeTheme, themes } = useTheme();
 
   return (
     <aside style={{
