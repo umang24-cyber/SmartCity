@@ -141,7 +141,7 @@ export const postSOS = async (lat, lng, message = 'Emergency SOS', token = null)
 // ── Health ───────────────────────────────────────────────────────────────────
 
 export const fetchHealth = async () =>
-  fetch('http://localhost:8000/health').then(r => r.json());
+  fetch(`${API_BASE_URL.replace('/api/v1', '')}/health`).then(r => r.json());
 
 
 // ── Mock Data Constants (offline fallbacks used by UI components) ─────────────

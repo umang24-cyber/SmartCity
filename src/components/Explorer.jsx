@@ -59,15 +59,15 @@ export default function Explorer({
   useEffect(() => {
     // 1. Fetch Heatmap GeoJSON
     fetch(`${backendUrl}/api/v1/graph/heatmap/geojson`)
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => setHeatmapData(data))
-      .catch(e => console.error("Heatmap fetch error:", e));
+      .catch(e => console.warn("Heatmap fetch error (possibly offline):", e));
 
     // 2. Fetch Clusters GeoJSON
     fetch(`${backendUrl}/api/v1/cluster-info/geojson`)
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => setClusterData(data))
-      .catch(e => console.error("Cluster fetch error:", e));
+      .catch(e => console.warn("Cluster fetch error (possibly offline):", e));
   }, [backendUrl]);
 
   const initialCenter = [12.9716, 77.5946]; // [lat, lng] — Leaflet order

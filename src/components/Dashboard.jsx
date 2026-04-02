@@ -55,7 +55,7 @@ export default function Dashboard() {
     );
   }
 
-  const unverifiedCount = incidents.filter(i => !i.verified).length;
+  const unverifiedCount = Array.isArray(incidents) ? incidents.filter(i => !i.verified).length : 0;
 
   const renderContent = () => {
     switch (activeTab) {

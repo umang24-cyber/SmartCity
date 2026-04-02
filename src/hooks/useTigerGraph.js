@@ -40,8 +40,9 @@ export const useTigerGraph = () => {
     try {
       const d = await fetchIncidents(verifiedOnly);
       setIncidents(d);
-    } catch {
-      setIncidents(MOCK_INCIDENTS);
+    } catch (err) {
+      console.warn("Failed to load incidents:", err);
+      setIncidents(Array.isArray(MOCK_INCIDENTS) ? MOCK_INCIDENTS : []);
     }
   }, [verifiedOnly]);
 

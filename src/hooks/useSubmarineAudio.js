@@ -92,7 +92,13 @@ export function useSubmarineAudio() {
       document.removeEventListener('mousedown', initAudio);
       document.removeEventListener('keydown', initAudio);
       if (audioCtxRef.current) {
-        audioCtxRef.current.close();
+        try {
+          if (audioCtxRef.current.state !== 'closed') {
+            audioCtxRef.current.close();
+          }
+        } catch (err) {
+          console.warn("Audio Context close error:", err);
+        }
         audioCtxRef.current = null;
       }
     };
