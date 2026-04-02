@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = `${(import.meta.env.VITE_API_ORIGIN || 'http://127.0.0.1:8000').replace(/\/$/, '')}/api/v1`;
 
 function Panel({ title, badge, children, accentColor = 'var(--accent)' }) {
   return (
@@ -108,10 +108,18 @@ export default function AdminPortal({ onBack }) {
         fetch(`${API_BASE}/admin/zones`),
         fetch(`${API_BASE}/admin/stats`),
       ]);
+      const parse = async (res) => {
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+        if (!res.ok) throw new Error(data?.detail || text || `HTTP ${res.status}`);
+        return data;
+      };
+
       const [incData, zoneData, statsData] = await Promise.all([
-        incRes.json(),
-        zoneRes.json(),
-        statsRes.json(),
+        parse(incRes),
+        parse(zoneRes),
+        parse(statsRes),
       ]);
       setIncidents(incData.incidents ?? incData ?? []);
       setZones(zoneData.zones ?? zoneData ?? []);

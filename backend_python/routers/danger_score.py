@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, Query
 from utils.safety_engine import compute_safety_score
 import utils.tigergraph as tg
+import logging
 
 router = APIRouter(prefix="/danger-score", tags=["Danger Score"])
+logger = logging.getLogger(__name__)
 
 def _normalize_intersection(intersection: dict) -> dict:
     baseline = float(intersection.get("baseline_safety_score", 0))
@@ -55,6 +57,7 @@ async def get_danger_score(
     weather: str = Query(default="clear", description="Current weather condition"),
 ):
     try:
+        logger.info("Danger score request intersection_id=%s weather=%s", intersection_id, weather)
         intersection = await tg.get_intersection(intersection_id)
         features = await tg.get_features_for_intersection(intersection_id)
         time_slice = await tg.get_current_time_slice()
@@ -63,6 +66,7 @@ async def get_danger_score(
         intersection = _normalize_intersection(intersection)
         time_slice = _normalize_time_slice(time_slice, weather)
         result = compute_safety_score(intersection, time_slice, features)
+        logger.info("Danger score computed intersection_id=%s score=%s risk=%s", intersection_id, result.get("score"), result.get("risk"))
         return result
 
     except Exception as e:

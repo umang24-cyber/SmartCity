@@ -1,0 +1,128 @@
+{
+    "users": {
+        "priya@test.com": {
+            "id": "u1",
+            "name": "Priya Sharma",
+            "email": "priya@test.com",
+            "hashed_password": "$2b$12$9wb26U.jJedD4/Pf7eq6eOBY9ZK9/3VN.eqcFIIwjDAa2PfIVwSJu",
+            "role": "user",
+            "auth_provider": "password"
+        },
+        "arjun@test.com": {
+            "id": "u2",
+            "name": "Arjun Mehta",
+            "email": "arjun@test.com",
+            "hashed_password": null,
+            "role": "supervisor",
+            "auth_provider": "access_key"
+        },
+        "kavita@test.com": {
+            "id": "u3",
+            "name": "Kavita Singh",
+            "email": "kavita@test.com",
+            "hashed_password": "$2b$12$iVnAkvCCPoZ3Qz9h9qU/z.HoUI561nDGg1Jj/dTxAq5zGGPp.HA/e",
+            "role": "officer",
+            "auth_provider": "password"
+        },
+        "shobna@ki.mkc": {
+            "id": "u_760b2f5a",
+            "name": "Shobna",
+            "email": "shobna@ki.mkc",
+            "hashed_password": "$2b$12$MYHLH.9RTbNJqrwk9icDYuXWAJvbLHEJ7DeRWiRiXuUEMf.wymJMq",
+            "role": "user",
+            "auth_provider": "password"
+        }
+    },
+    "incidents": [
+        {
+            "incident_id": "SOS_5429C2",
+            "incident_type": "sos_alert",
+            "severity": "critical",
+            "severity_score": 1.0,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-04-02T16:44:18.835221Z",
+            "source": "sos_button",
+            "location_id": "unknown",
+            "lat": 12.9716,
+            "lng": 77.5946,
+            "verified": false,
+            "user_id": "u_760b2f5a",
+            "message": "EMERGENCY SOS"
+        },
+        {
+            "incident_id": "SOS_E0EC98A3",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-04-02T16:43:32.454285+00:00",
+            "source": "sos_alert",
+            "lat": 12.9716,
+            "lng": 77.5946,
+            "location_id": "12.9716_77.5946",
+            "verified": true
+        },
+        {
+            "incident_id": "INC_001",
+            "incident_type": "poor_lighting",
+            "text": "Poorly lit stretch near the bus stop at night.",
+            "severity": "high",
+            "severity_score": 0.75,
+            "credibility": 0.85,
+            "emotion": "fear",
+            "timestamp": "2025-01-15T21:30:00Z",
+            "source": "user_report",
+            "location_id": "zone_residency",
+            "lat": 12.9698,
+            "lng": 77.5981,
+            "verified": true
+        },
+        {
+            "incident_id": "INC_002",
+            "incident_type": "felt_followed",
+            "text": "Felt followed by a group of men near Cubbon Park after 11 PM.",
+            "severity": "critical",
+            "severity_score": 0.92,
+            "credibility": 0.9,
+            "emotion": "fear",
+            "timestamp": "2025-01-15T23:10:00Z",
+            "source": "user_report",
+            "location_id": "zone_cubbon",
+            "lat": 12.9763,
+            "lng": 77.5929,
+            "verified": true
+        },
+        {
+            "incident_id": "INC_003",
+            "incident_type": "broken_cctv",
+            "text": "CCTV camera on Brigade Road appears to be broken.",
+            "severity": "medium",
+            "severity_score": 0.48,
+            "credibility": 0.7,
+            "emotion": "neutral",
+            "timestamp": "2025-01-14T19:45:00Z",
+            "source": "user_report",
+            "location_id": "zone_mg_brigade",
+            "lat": 12.972,
+            "lng": 77.595,
+            "verified": false
+        },
+        {
+            "incident_id": "INC_004",
+            "incident_type": "suspicious_activity",
+            "text": "Suspicious activity near ATM cluster on MG Road late at night.",
+            "severity": "high",
+            "severity_score": 0.78,
+            "credibility": 0.82,
+            "emotion": "anxiety",
+            "timestamp": "2025-01-15T22:00:00Z",
+            "source": "user_report",
+            "location_id": "zone_mg_brigade",
+            "lat": 12.9745,
+            "lng": 77.596,
+            "verified": true
+        }
+    ]
+}

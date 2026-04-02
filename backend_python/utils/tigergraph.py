@@ -7,8 +7,11 @@ DATA_SOURCE=tigergraph. Nothing else changes.
 import os
 import httpx
 from typing import Any, Dict, List, Optional
+import logging
 
 from config import TIGERGRAPH_HOST, TIGERGRAPH_GRAPH, TIGERGRAPH_TOKEN
+
+logger = logging.getLogger(__name__)
 
 # Construct the REST++ base URL from the managed cloud host 
 # (Managed TG instances use /restpp as the endpoint prefix)
@@ -21,16 +24,20 @@ HEADERS = {
 
 
 async def _get(path: str, params: Optional[Dict] = None) -> Any:
+    logger.info("TigerGraph GET %s params=%s", path, params)
     async with httpx.AsyncClient(timeout=10) as client:
         res = await client.get(f"{BASE}{path}", headers=HEADERS, params=params)
         res.raise_for_status()
+        logger.info("TigerGraph GET %s -> %s", path, res.status_code)
         return res.json()
 
 
 async def _post(path: str, body: Dict) -> Any:
+    logger.info("TigerGraph POST %s", path)
     async with httpx.AsyncClient(timeout=10) as client:
         res = await client.post(f"{BASE}{path}", headers=HEADERS, json=body)
         res.raise_for_status()
+        logger.info("TigerGraph POST %s -> %s", path, res.status_code)
         return res.json()
 
 

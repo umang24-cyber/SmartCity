@@ -65,7 +65,7 @@ export const useTigerGraph = () => {
   const loadCluster = useCallback(async () => {
     try {
       const d = await fetchClusterInfo(1);
-      setCluster(d);
+      setCluster(d || MOCK_CLUSTER);
     } catch {
       setCluster(MOCK_CLUSTER);
     }
@@ -75,7 +75,7 @@ export const useTigerGraph = () => {
   const loadIntersections = useCallback(async () => {
     try {
       const d = await fetchIntersections();
-      setIntersections(d);
+      setIntersections(Array.isArray(d) ? d : []);
     } catch {
       // Fallback inline mock (mirrors API shape)
       setIntersections([

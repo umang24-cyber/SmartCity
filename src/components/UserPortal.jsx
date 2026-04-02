@@ -8,7 +8,7 @@
 
 import React, { useState } from 'react';
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = `${(import.meta.env.VITE_API_ORIGIN || 'http://127.0.0.1:8000').replace(/\/$/, '')}/api/v1`;
 
 /* ── Tiny reusable panel ──────────────────────────────────────── */
 function Panel({ title, badge, children, accentColor = 'var(--accent)' }) {
@@ -142,8 +142,10 @@ export default function UserPortal({ onBack }) {
           destination: { lat: parseFloat(dstLat), lng: parseFloat(dstLng) },
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Request failed');
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+      if (!res.ok) throw new Error(data?.detail || text || 'Request failed');
       setRouteResult(data);
     } catch (e) {
       setRouteError(e.message);
@@ -166,8 +168,10 @@ export default function UserPortal({ onBack }) {
           message: sosMsg || 'Emergency SOS',
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'SOS failed');
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+      if (!res.ok) throw new Error(data?.detail || text || 'SOS failed');
       setSosResult(data);
     } catch (e) {
       setSosError(e.message);

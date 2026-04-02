@@ -41,7 +41,7 @@ export default function Explorer({
   safeRoute = null, 
   safeZones = [], 
   selectedIntersection = null, 
-  backendUrl = "http://localhost:8000" 
+  backendUrl = "http://127.0.0.1:8000" 
 }) {
   const { mode } = useTheme();
 
@@ -58,15 +58,23 @@ export default function Explorer({
   const [showClusters, setShowClusters] = useState(true);
 
   useEffect(() => {
+    const parse = async (res) => {
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+      if (!res.ok) throw new Error(data?.detail || text || `HTTP ${res.status}`);
+      return data;
+    };
+
     // 1. Fetch Heatmap GeoJSON
     fetch(`${backendUrl}/api/v1/graph/heatmap/geojson`)
-      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(parse)
       .then(data => setHeatmapData(data))
       .catch(e => console.warn("Heatmap fetch error (possibly offline):", e));
 
     // 2. Fetch Clusters GeoJSON
     fetch(`${backendUrl}/api/v1/cluster-info/geojson`)
-      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(parse)
       .then(data => setClusterData(data))
       .catch(e => console.warn("Cluster fetch error (possibly offline):", e));
   }, [backendUrl]);

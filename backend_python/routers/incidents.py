@@ -1,10 +1,12 @@
 import os
+import logging
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
 from custom_db.mock_db import MOCK_INCIDENTS
 import utils.tigergraph as tg
 
 router = APIRouter(prefix="/incidents", tags=["Incidents"])
+logger = logging.getLogger(__name__)
 
 DATA_SOURCE = os.getenv("DATA_SOURCE", "mock")
 
@@ -15,12 +17,14 @@ _runtime_incidents: List[dict] = []
 @router.get("/", summary="Get all incident reports (optionally filtered by verified)")
 async def get_incidents(verified: bool = Query(default=False, description="Return only verified incidents")):
     try:
+        logger.info("Fetching incidents (verified_only=%s, source=%s)", verified, DATA_SOURCE)
         if DATA_SOURCE == "tigergraph":
             incidents = await tg.get_all_incidents(verified_only=verified)
         else:
             base = MOCK_INCIDENTS + _runtime_incidents
             incidents = [i for i in base if i["verified"]] if verified else base
 
+        logger.info("Returning %s incidents", len(incidents))
         return incidents
 
     except Exception as e:

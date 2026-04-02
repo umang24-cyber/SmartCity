@@ -181,21 +181,21 @@ async def analyze_incident_report(
             detail="NLP model not loaded"
         )
 
-        try:
-            result = analyze_report(req.text, bundle=nlp_bundle)
+    try:
+        result = analyze_report(req.text, bundle=nlp_bundle)
 
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
 
-        except Exception as exc:
-            logger.error("NLP analysis failed: %s", exc, exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"NLP analysis failed: {exc}",
-            )
+    except Exception as exc:
+        logger.error("NLP analysis failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"NLP analysis failed: {exc}",
+        )
 
     response = ReportAnalysisResponse(
         report_id=req.report_id,
