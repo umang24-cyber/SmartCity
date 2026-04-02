@@ -14,10 +14,26 @@ import CitizenDashboard from './pages/CitizenDashboard';
 import SupervisorDashboard from './pages/SupervisorDashboard';
 import OfficerDashboard from './pages/OfficerDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicPortalSplash from './pages/PublicPortalSplash';
+import PublicCitizenPortal from './pages/PublicCitizenPortal';
+
+import { useLocation } from 'react-router-dom';
+
+function AudioSystem() {
+  useSubmarineAudio();
+  return null;
+}
 
 function SubmarineSystems() {
-  useSubmarineAudio();
-  return <CustomCursor />;
+  const location = useLocation();
+  const isCitizenPortal = location.pathname.startsWith('/citizen-portal') || location.pathname === '/';
+  
+  return (
+    <>
+      <CustomCursor />
+      {!isCitizenPortal && <AudioSystem />}
+    </>
+  );
 }
 
 function MainApp() {
@@ -31,12 +47,15 @@ function MainApp() {
       {isLoading && <LoadingScreen onComplete={handleComplete} />}
       {!isLoading && (
         <Routes>
+          {/* Splash and Public Portals */}
+          <Route path="/" element={<PublicPortalSplash />} />
+          <Route path="/citizen-portal" element={<PublicCitizenPortal />} />
+          
           {/* Public Route */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           
-          {/* Public Dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Public Dashboard (Legacy Admin) */}
           <Route path="/dashboard" element={<Dashboard />} />
 
           {/* Protected Role-Based Routes */}

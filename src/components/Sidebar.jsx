@@ -10,6 +10,8 @@ const TABS = [
   { id: 'ROUTE',    icon: '→', label: 'SAFE ROUTE' },
   { id: 'SECTOR',   icon: '◈', label: 'CLUSTER INFO' },
   { id: 'DISPATCH', icon: '✦', label: 'DISPATCH' },
+  { id: 'SURVEILLANCE', icon: '📷', label: 'SURVEILLANCE' },
+  { id: 'ANOMALY',  icon: '⚡', label: 'ANOMALY SCAN' },
 ];
 
 export default function Sidebar({ activeTab, onTabChange, threatCount = 0 }) {

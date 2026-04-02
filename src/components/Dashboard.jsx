@@ -8,6 +8,8 @@ import DangerPanel from './DangerPanel';
 import IncidentsPanel from './IncidentsPanel';
 import SafeRoutePanel from './SafeRoutePanel';
 import ClusterPanel from './ClusterPanel';
+import CCTVPanel from './CCTVPanel';
+import AnomalyScanner from './AnomalyScanner';
 import { useTigerGraph } from '../hooks/useTigerGraph';
 
 const PanelHeader = ({ title, subtitle, badge }) => (
@@ -181,6 +183,12 @@ export default function Dashboard() {
             <ReportForm />
           </div>
         );
+
+      case 'SURVEILLANCE':
+        return <CCTVPanel />;
+
+      case 'ANOMALY':
+        return <AnomalyScanner />;
 
       default:
         return null;

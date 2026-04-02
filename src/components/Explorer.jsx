@@ -39,6 +39,7 @@ export default function Explorer({
   intersections = [], 
   incidents = [], 
   safeRoute = null, 
+  safeZones = [], 
   selectedIntersection = null, 
   backendUrl = "http://localhost:8000" 
 }) {
@@ -176,6 +177,28 @@ export default function Explorer({
                 iconAnchor: [6, 6]
               })}
             />
+          ))}
+
+          {/* ── SAFE ZONES (Havens & Police) ── */}
+          {safeZones?.map((zone, idx) => (
+            <Marker 
+              key={`safezone-${idx}`} 
+              position={[zone.lat, zone.lng]}
+              icon={L.divIcon({
+                className: 'safe-zone-icon',
+                html: `<div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0, 150, 255, 0.2); border: 2px solid #0096ff; border-radius: 4px; box-shadow: 0 0 10px rgba(0,150,255,0.5); font-size: 10px;">🛡️</div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+              })}
+            >
+               <Popup>
+                 <div style={{ fontFamily: 'var(--font-mono)', color: '#0096ff', background: 'rgba(10,15,25,0.9)', padding: '4px' }}>
+                   <strong>{zone.name}</strong><br/>
+                   Type: {zone.type.replace('_', ' ')}<br/>
+                   {zone.is_open_now ? '✅ Open' : '❌ Closed'}
+                 </div>
+               </Popup>
+            </Marker>
           ))}
 
           {/* ── SELECTED NODE ── */}

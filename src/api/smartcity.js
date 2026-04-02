@@ -57,9 +57,9 @@ export const getMe = async (token) =>
 
 // ── Incident Operations ──────────────────────────────────────────────────────
 
-export const getIntersections = async () => apiFetch('/intersections');
+export const fetchIntersections = async () => apiFetch('/intersections');
 
-export const getIncidents = async () => apiFetch('/incidents');
+export const fetchIncidents = async () => apiFetch('/incidents');
 
 export const postReport = async (reportData, token) =>
   apiPost('/reports', reportData, token);
@@ -118,6 +118,46 @@ export const verifyIncident = async (id, verified, note, token) => {
   if (!response.ok) throw new Error('Verification update failed');
   return response.json();
 };
+
+
+// ── Patrol / Officer Operations ──────────────────────────────────────────────
+
+export const getAssignments = async (token) =>
+  apiFetch('/patrol/assignments', token);
+
+export const getActiveIncidents = async (token) =>
+  apiFetch('/patrol/active-incidents', token);
+
+export const respondToIncident = async (id, body, token) => {
+  const response = await fetch(`${API_BASE_URL}/patrol/incidents/${id}/respond`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) throw new Error('Response dispatch failed');
+  return response.json();
+};
+
+
+// ── Advanced Analysis (Admin) ────────────────────────────────────────────────
+
+export const analyzeCCTVSnapshot = async (base64Image, token = null) =>
+  apiPost('/cctv/analyze-b64', { image_b64: base64Image }, token);
+
+export const detectZoneAnomaly = async (zoneId, timeseriesValues, token = null) =>
+  apiPost('/anomaly/detect', { zone_id: zoneId, values: timeseriesValues }, token);
+
+
+// ── Citizen Hub Operations ────────────────────────────────────────────────
+
+export const fetchSafeZones = async () =>
+  apiFetch('/citizen/safe-zones');
+
+export const fetchSosContacts = async () =>
+  apiFetch('/citizen/sos-contacts');
 
 
 // ── Admin / Portal Operations ────────────────────────────────────────────────
