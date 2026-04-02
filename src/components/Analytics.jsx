@@ -1,27 +1,43 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { useTheme } from '../context/ThemeContext';
 
-export function SafetyVariance({ data }) {
+export function SafetyVariance({ data = [] }) {
+  const { mode } = useTheme();
+
+  const chartStyle = {
+    contentStyle: {
+      background: 'var(--bg-panel)',
+      border: '1px solid var(--border)',
+      borderRadius: 0,
+      fontFamily: 'Share Tech Mono, monospace',
+      fontSize: 10,
+      color: 'var(--text-primary)',
+    },
+    itemStyle: { color: 'var(--accent)' },
+  };
   return (
-    <div className="glass rounded-2xl p-6 border border-white/5 h-full flex flex-col">
-      <h3 className="font-bold text-sm text-text-secondary uppercase tracking-widest mb-4">Safety Score Variance</h3>
-      <div className="flex-1 min-h-[140px]">
+    <div className="panel panel-cut" style={{ padding: '1rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="label-xs" style={{ marginBottom: '0.6rem', color: 'var(--accent)' }}>
+        ▤ SAFETY SCORE VARIANCE — 24H
+      </div>
+      <div style={{ flex: 1, minHeight: 140 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>
-              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#00ff88" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="#00ff88" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-            <XAxis dataKey="time" stroke="rgba(255,255,255,0.3)" fontSize={10} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="2 4" stroke="rgba(0,255,136,0.06)" vertical={false} />
+            <XAxis dataKey="time" stroke="rgba(0,255,136,0.3)" fontSize={9}
+              axisLine={false} tickLine={false} fontFamily="Share Tech Mono, monospace" />
             <YAxis hide domain={[0, 100]} />
-            <Tooltip 
-              contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '10px' }}
-              itemStyle={{ color: 'var(--accent)' }}
-            />
-            <Area type="monotone" dataKey="value" stroke="var(--accent)" fillOpacity={1} fill="url(#colorValue)" />
+            <Tooltip contentStyle={chartStyle.contentStyle} itemStyle={chartStyle.itemStyle} />
+            <Area type="monotone" dataKey="value"
+              stroke="#00ff88" strokeWidth={1.5}
+              fillOpacity={1} fill="url(#areaGrad)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -29,23 +45,44 @@ export function SafetyVariance({ data }) {
   );
 }
 
-export function PeakDangerHours({ data }) {
+export function PeakDangerHours({ data = [] }) {
+  const { mode } = useTheme();
+
+  const chartStyle = {
+    contentStyle: {
+      background: 'var(--bg-panel)',
+      border: '1px solid var(--border)',
+      borderRadius: 0,
+      fontFamily: 'Share Tech Mono, monospace',
+      fontSize: 10,
+      color: 'var(--text-primary)',
+    },
+    itemStyle: { color: 'var(--accent)' },
+  };
+
   return (
-    <div className="glass rounded-2xl p-6 border border-white/5 h-full flex flex-col">
-      <h3 className="font-bold text-sm text-text-secondary uppercase tracking-widest mb-4">Peak Danger Levels</h3>
-      <div className="flex-1 min-h-[140px]">
+    <div className="panel panel-cut" style={{ padding: '1rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="label-xs" style={{ marginBottom: '0.6rem', color: 'var(--amber)' }}>
+        ⚠ PEAK DANGER HOURS
+      </div>
+      <div style={{ flex: 1, minHeight: 140 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-            <XAxis dataKey="hour" stroke="rgba(255,255,255,0.3)" fontSize={10} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,170,0,0.06)" vertical={false} />
+            <XAxis dataKey="hour" stroke="rgba(255,170,0,0.3)" fontSize={9}
+              axisLine={false} tickLine={false} fontFamily="Share Tech Mono, monospace" />
             <YAxis hide domain={[0, 100]} />
-            <Tooltip 
-              cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-              contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '10px' }}
+            <Tooltip
+              cursor={{ fill: 'rgba(255,170,0,0.04)' }}
+              contentStyle={{ ...chartStyle.contentStyle, borderColor: 'rgba(255,170,0,0.2)' }}
+              itemStyle={{ color: '#ffaa00' }}
             />
-            <Bar dataKey="level" radius={[4, 4, 0, 0]}>
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.level > 80 ? '#ef4444' : 'var(--accent)'} />
+            <Bar dataKey="level" radius={[0, 0, 0, 0]} maxBarSize={24}>
+              {data.map((entry, i) => (
+                <Cell key={i}
+                  fill={entry.level >= 90 ? '#ff3344' : entry.level >= 70 ? '#ffaa00' : '#00ff88'}
+                  style={{ filter: `drop-shadow(0 0 4px ${entry.level >= 90 ? '#ff3344' : entry.level >= 70 ? '#ffaa00' : '#00ff88'})` }}
+                />
               ))}
             </Bar>
           </BarChart>
