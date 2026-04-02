@@ -93,6 +93,10 @@ async def lifespan(app: FastAPI):
     import asyncio
     app.state.models = {}
 
+    # Initialize TigerGraph connection
+    from custom_db.tigergraph_client import get_client
+    get_client().connect()
+
     # Start background loading — app begins serving immediately
     task = asyncio.create_task(_load_models_task(app))
 
@@ -154,12 +158,19 @@ app.include_router(dev.router,            prefix="/api/v1")
 app.include_router(portal_routes.router,  prefix="/api/v1")
 
 
+from custom_db.tigergraph_client import get_client
+
+
 @app.get("/health", tags=["System"])
 async def health_check():
     """Simple health check endpoint."""
+    from config import USE_MOCK_DB
     models_loaded = list(getattr(app.state, "models", {}).keys())
+    client = get_client()
     return {
         "status": "ok",
+        "db_connected": client.connected,
+        "using_mock_db": USE_MOCK_DB,
         "models_loaded": models_loaded,
         "api_prefix": "/api/v1",
     }

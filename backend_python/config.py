@@ -34,25 +34,21 @@ CV_YOLO_PATH: Path = AI_ROOT / "cv" / "yolov8n.pt"
 CV_YOLO_MODEL_NAME: str = os.getenv("YOLO_MODEL_NAME", "yolov8n.pt")
 
 NLP_MODULE_PATH: Path = AI_ROOT / "nlp"
+# NLP entrypoint (main inference file)
 NLP_ENTRYPOINT: Path = NLP_MODULE_PATH / "inference.py"
+
 ANOMALY_MODULE_PATH: Path = AI_ROOT / "anomaly"
 
 LSTM_MODEL_EXISTS: bool = LSTM_MODEL_PATH.exists()
 CV_MODEL_EXISTS: bool = CV_MOBILENET_PATH.exists()
 # ── TigerGraph Connection ─────────────────────────────────────────────────────
 
-TIGERGRAPH_HOST: str = os.getenv("TIGERGRAPH_HOST", "http://localhost")
-TIGERGRAPH_PORT: int = int(os.getenv("TIGERGRAPH_PORT", "14240"))
-TIGERGRAPH_GRAPH: str = os.getenv("TIGERGRAPH_GRAPH", "SafeCity")
-TIGERGRAPH_USERNAME: str = os.getenv("TIGERGRAPH_USERNAME", "tigergraph")
-TIGERGRAPH_PASSWORD: str = os.getenv("TIGERGRAPH_PASSWORD", "tigergraph")
+# Core connection requirements (strictly no username/password)
+TIGERGRAPH_HOST: str = os.getenv("TG_HOST", "https://tg-955b4acb-5d72-46eb-a8f4-420628df0978.tg-3452941248.i.tgcloud.io")
+TIGERGRAPH_GRAPH: str = os.getenv("TG_GRAPHNAME", "UrbanSafetyGraph")
+TIGERGRAPH_TOKEN: str = os.getenv("TG_TOKEN", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwYWxha21pdHRhbC5idDI1Y3NlZHNAcGVjLmVkdS5pbiIsImlhdCI6MTc3NTExMzA3NiwiZXhwIjoxNzgyODg5MDgxLCJpc3MiOiJUaWdlckdyYXBoIn0.qDivaGPN9N9nRCwDnepSqgXNyjF76yo1ABmLMngEHXg")
 
-# Legacy REST++ token (used by utils/tigergraph.py for old endpoints)
-TIGERGRAPH_TOKEN: str = os.getenv("TG_TOKEN", "")
-TIGERGRAPH_GRAPH_LEGACY: str = os.getenv("TG_GRAPH", "SafeRouteGraph")
-
-# When True, the DB layer uses in-memory mock data; no TigerGraph required.
-USE_MOCK_DB: bool = os.getenv("USE_MOCK_DB", "true").lower() == "true"
+USE_MOCK_DB: bool = False
 
 
 # ── Cache TTLs (seconds) ──────────────────────────────────────────────────────

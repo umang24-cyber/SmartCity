@@ -103,11 +103,8 @@ async def compute_safe_route(
     waypoint_scores = []
     for lat, lng in waypoints:
         zone_id = f"{lat:.4f}_{lng:.4f}"
-        try:
-            zone_data = await get_zone_data(zone_id)
-            score = zone_data.get("danger_score", 0.3)
-        except Exception:
-            score = 0.3  # neutral fallback
+        zone_data = await get_zone_data(zone_id)
+        score = zone_data.get("danger_score", 0.3)
         waypoint_scores.append(score)
 
     # Build GeoJSON segments

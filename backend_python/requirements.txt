@@ -12,9 +12,8 @@ python-multipart==0.0.9
 # ─── HTTP Client ────────────────────────────────────────────────────────────
 httpx==0.28.1
 
-# ─── TigerGraph connector (optional — install for production) ────────────────
-# Comment out if running in full mock mode.
-# pyTigerGraph==1.6.0
+# ─── TigerGraph connector ─────────────────────────────────────────────────────
+pyTigerGraph==1.6.1
 
 # ─── AI / ML (heavy — install only the models your team is running) ──────────
 # Uncomment the ones you need:
