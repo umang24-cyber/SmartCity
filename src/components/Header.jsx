@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import OrayaLogo from './OrayaLogo';
 
 export default function Header({ safetyScore, backendOnline, intersectionName, onRefresh }) {
   const [clock, setClock] = useState('');
@@ -47,28 +48,15 @@ export default function Header({ safetyScore, backendOnline, intersectionName, o
     }}>
       {/* LEFT — Branding */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-        {/* Logo mark */}
-        <div style={{ position: 'relative', width: 36, height: 36 }}>
-          <svg width="36" height="36" viewBox="0 0 36 36">
-            <polygon points="18,2 34,28 2,28" fill="none" stroke="var(--accent)" strokeWidth="1.5" />
-            <circle cx="18" cy="20" r="5" fill="var(--accent)" style={{ filter: 'drop-shadow(0 0 6px var(--accent))' }} />
-          </svg>
-        </div>
-        <div>
-          <div style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: 'var(--accent)',
-            letterSpacing: '0.25em',
-            textShadow: '0 0 12px rgba(0,255,136,0.5)',
-          }}>
-            ORAYA
-          </div>
-          <div className="label-xs" style={{ marginTop: '1px' }}>
-            SAFETY, BEFORE IT'S NEEDED ── {intersectionName || 'MG ROAD & BRIGADE RD'}
-          </div>
-        </div>
+        <OrayaLogo 
+          variant="full" 
+          status={safetyScore < 45 ? 'alert' : 'active'} 
+          subtitle={
+            <div className="label-xs" style={{ color: 'var(--text-secondary)' }}>
+              SAFETY, BEFORE IT'S NEEDED ── {intersectionName || 'MG ROAD & BRIGADE RD'}
+            </div>
+          }
+        />
 
         {/* Divider */}
         <div style={{ width: 1, height: 32, background: 'var(--border)' }} />

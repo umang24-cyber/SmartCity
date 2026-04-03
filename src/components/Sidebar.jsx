@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import ModeSlider from './ModeSlider';
+import OrayaLogo from './OrayaLogo';
 
 const TABS = [
   { id: 'SONAR',    icon: '◎', label: 'SONAR MAP' },
@@ -37,7 +38,7 @@ export default function Sidebar({ activeTab, onTabChange, threatCount = 0 }) {
         alignItems: 'center',
         gap: '0.6rem',
       }}>
-        <div className="led led-green pulse-green" />
+        <OrayaLogo variant="icon" status="idle" />
         <span className="label-xs" style={{ color: 'var(--accent)', letterSpacing: '0.2em' }}>NAVIGATION</span>
       </div>
 

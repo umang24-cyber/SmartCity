@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import CustomCursor from '../components/CustomCursor';
+import OrayaLogo from '../components/OrayaLogo';
 
 export default function PublicPortalSplash() {
   const navigate = useNavigate();
@@ -22,26 +23,21 @@ export default function PublicPortalSplash() {
       <div className="scanlines" />
       <div className="vignette" />
 
-      <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', marginBottom: '4rem' }}>
-        <h1 style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: '3rem',
-          color: 'var(--text-primary)',
-          letterSpacing: '0.2em',
-          margin: 0,
-          textShadow: '0 0 20px rgba(0, 255, 136, 0.4)'
-        }}>
-          ORAYA OS
-        </h1>
-        <div style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.8rem',
-          color: 'var(--accent)',
-          letterSpacing: '0.3em',
-          marginTop: '0.5rem'
-        }}>
-          INITIALIZING CONNECTION PORTAL
-        </div>
+      <div style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'center', marginBottom: '4rem' }}>
+        <OrayaLogo 
+          variant="splash" 
+          status="active" 
+          subtitle={
+            <div style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.8rem',
+              color: 'var(--accent)',
+              letterSpacing: '0.3em',
+            }}>
+              INITIALIZING CONNECTION PORTAL
+            </div>
+          } 
+        />
       </div>
 
       <div style={{ display: 'flex', gap: '2rem', position: 'relative', zIndex: 10, flexWrap: 'wrap', justifyContent: 'center' }}>

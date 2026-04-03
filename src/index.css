@@ -537,3 +537,55 @@ body {
 }
 .text-accent { color: var(--accent); }
 .bg-accent { background-color: var(--accent); }
+
+/* ════════════════════════════════════════════════════════════
+   ORAYA LOGO MICRO-INTERACTIONS
+   ════════════════════════════════════════════════════════════ */
+
+@keyframes oraya-pulse {
+  0%, 100% { opacity: 0.7; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes oraya-sweep {
+  0% { transform: rotate(0deg); opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { transform: rotate(360deg); opacity: 0.5; }
+}
+
+@keyframes oraya-alert-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.oraya-logo-idle .oraya-core {
+  animation: oraya-pulse 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.oraya-logo-active .oraya-radar {
+  animation: oraya-sweep 4s linear infinite;
+  transform-origin: center;
+}
+.oraya-logo-active .oraya-core {
+  animation: oraya-pulse 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.oraya-logo-alert {
+  animation: oraya-alert-shake 0.3s ease-in-out infinite;
+}
+.oraya-logo-alert .oraya-radar {
+  animation: oraya-sweep 1s linear infinite;
+  transform-origin: center;
+}
+.oraya-logo-alert .oraya-core {
+  animation: oraya-pulse 0.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.oraya-logo-loading .oraya-radar {
+  animation: oraya-sweep 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: center;
+}

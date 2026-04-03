@@ -29,9 +29,9 @@ export default function SafeRoutePanel({ safeRoute, intersections = [], routeSta
     const { waypoints = [], stats = {}, avoided_intersections = [] } = safeRoute;
 
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', flex: 1, minHeight: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {/* LEFT — Route visualization */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', paddingRight: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingRight: '0.5rem' }}>
           {/* Stats */}
           <div className="panel panel-cut" style={{ padding: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', flexShrink: 0 }}>
             <div style={{ background: 'rgba(0,255,136,0.05)', border: '1px solid var(--border)', padding: '0.6rem' }}>
@@ -49,7 +49,7 @@ export default function SafeRoutePanel({ safeRoute, intersections = [], routeSta
           </div>
 
           {/* Node chain visualization */}
-          <div className="panel panel-cut" style={{ padding: '1.25rem', flex: 1, overflowY: 'auto' }}>
+          <div className="panel panel-cut" style={{ padding: '1.25rem' }}>
             <div className="label-xs" style={{ marginBottom: '1rem' }}>ROUTE WAYPOINTS</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               {waypoints.map((node, i) => (
@@ -86,11 +86,11 @@ export default function SafeRoutePanel({ safeRoute, intersections = [], routeSta
         </div>
 
         {/* RIGHT — Reasoning */}
-        <div className="panel panel-cut" style={{ padding: '1.25rem', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="panel panel-cut" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column' }}>
           <div className="label-xs" style={{ marginBottom: '1rem', color: 'var(--accent)' }}>
             ◎ ROUTE ANALYSIS & SAFETY
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', overflowY: 'auto', flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             
             <div style={{
               padding: '0.85rem',
@@ -134,10 +134,10 @@ export default function SafeRoutePanel({ safeRoute, intersections = [], routeSta
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Top Bar for Selection */}
-      <div className="panel panel-cut" style={{ padding: '0.75rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', flexShrink: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <div className="panel panel-cut" style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           <label className="label-xs" style={{ marginBottom: 4 }}>START POINT</label>
           <select 
             value={routeStart?.id || ""} 
@@ -156,9 +156,7 @@ export default function SafeRoutePanel({ safeRoute, intersections = [], routeSta
           </select>
         </div>
 
-        <div style={{ color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>→</div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           <label className="label-xs" style={{ marginBottom: 4 }}>END POINT</label>
           <select 
             value={routeEnd?.id || ""} 

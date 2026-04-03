@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import OrayaLogo from './OrayaLogo';
 
 const BOOT_LINES = [
   '> ORAYA COMMAND SYSTEM v4.2.1',
@@ -62,20 +63,16 @@ export default function LoadingScreen({ onComplete }) {
       {/* Content */}
       <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 560, padding: '0 2rem' }}>
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <div style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '2.2rem',
-            fontWeight: 900,
-            color: 'var(--accent)',
-            letterSpacing: '0.35em',
-            textShadow: '0 0 30px var(--accent), 0 0 60px rgba(0,255,136,0.3)',
-          }}>
-            ORAYA
-          </div>
-          <div className="label-xs" style={{ marginTop: '0.25rem', letterSpacing: '0.5em' }}>
-            SAFETY, BEFORE IT'S NEEDED
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
+          <OrayaLogo 
+            variant="loading" 
+            status="active" 
+            subtitle={
+              <div className="label-xs" style={{ letterSpacing: '0.5em', marginTop: '0.5rem' }}>
+                SAFETY, BEFORE IT'S NEEDED
+              </div>
+            }
+          />
         </div>
 
         {/* Boot log */}

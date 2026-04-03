@@ -4,6 +4,8 @@ import Explorer from '../components/Explorer';
 import { useTigerGraph } from '../hooks/useTigerGraph';
 import { postSOS, fetchSafeZones, fetchSosContacts } from '../api/smartcity';
 import SafeRoutePanel from '../components/SafeRoutePanel';
+import ModeSlider from '../components/ModeSlider';
+import OrayaLogo from '../components/OrayaLogo';
 
 export default function PublicCitizenPortal() {
   const navigate = useNavigate();
@@ -43,18 +45,27 @@ export default function PublicCitizenPortal() {
         padding: '1rem 2rem', borderBottom: '1px solid var(--accent)',
         background: 'var(--bg-panel)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', margin: 0, color: 'var(--accent)', letterSpacing: '0.1em' }}>
-            ORAYA SAFETY PORTAL
-          </h1>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>PUBLIC ACCESS</span>
+        <OrayaLogo 
+          variant="full" 
+          status="active" 
+          subtitle={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>SAFETY PORTAL</span>
+              <span style={{ fontSize: '0.6rem', color: 'var(--accent)', background: 'rgba(0, 255, 136, 0.1)', padding: '2px 6px', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>PUBLIC ACCESS</span>
+            </div>
+          }
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <div style={{ width: '150px' }}>
+            <ModeSlider />
+          </div>
+          <button 
+            onClick={() => navigate('/')} 
+            style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', padding: '0.4rem 1rem', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer' }}
+          >
+            LOGOUT
+          </button>
         </div>
-        <button 
-          onClick={() => navigate('/')} 
-          style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', padding: '0.4rem 1rem', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer' }}
-        >
-          LOGOUT
-        </button>
       </header>
 
       {/* Main Content */}
@@ -64,17 +75,35 @@ export default function PublicCitizenPortal() {
         <div style={{ width: '350px', display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto' }}>
           
           {/* SOS Section */}
-          <div className="panel" style={{ padding: '1.5rem', border: '2px solid var(--red-alert)', background: 'rgba(255,51,68,0.05)', textAlign: 'center' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--red-alert)', margin: '0 0 1rem 0' }}>EMERGENCY OVERRIDE</h2>
+          <div className="panel" style={{ 
+            padding: '1.5rem', 
+            border: '2px solid var(--red-alert)', 
+            background: 'rgba(255, 51, 68, 0.1)', 
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            marginBottom: '0.5rem',
+            flexShrink: 0
+          }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--red-alert)', margin: 0 }}>EMERGENCY OVERRIDE</h2>
             <button 
               onClick={handleSOS}
               disabled={sosStatus === 'SENDING'}
               style={{
-                width: '100%', padding: '1.5rem', background: 'var(--red-alert)', color: '#fff',
-                fontFamily: 'var(--font-display)', fontSize: '1.5rem', border: 'none', borderRadius: '4px',
+                width: '100%', 
+                minHeight: '60px', 
+                background: 'var(--red-alert)', 
+                color: '#fff',
+                fontFamily: 'var(--font-display)', 
+                fontSize: '1.25rem', 
+                border: 'none', 
+                borderRadius: '4px',
                 cursor: sosStatus === 'SENDING' ? 'wait' : 'pointer',
-                boxShadow: sosStatus === 'IDLE' ? '0 0 20px rgba(255, 51, 68, 0.4)' : 'none',
-                opacity: sosStatus === 'ERROR' ? 0.7 : 1
+                boxShadow: '0 0 20px rgba(255, 51, 68, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >
               {sosStatus === 'SENDING' ? 'BROADCASTING...' : sosStatus === 'SENT' ? 'HELP EN ROUTE' : 'ACTIVATE SOS'}
@@ -102,7 +131,7 @@ export default function PublicCitizenPortal() {
           )}
 
           {/* Routing Section */}
-          <div className="panel" style={{ padding: '1rem', flex: 1, minHeight: '300px' }}>
+          <div className="panel" style={{ padding: '1rem', flexShrink: 0 }}>
             <SafeRoutePanel 
               safeRoute={safeRoute} 
               intersections={intersections}
