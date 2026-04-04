@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import Explorer from '../components/Explorer';
 import { useTigerGraph } from '../hooks/useTigerGraph';
 import { apiFetch, apiPost, fetchSafeZones, fetchSosContacts } from '../api/smartcity';
+import ModeSlider from '../components/ModeSlider';
+import OrayaLogo from '../components/OrayaLogo';
 
 const ZONE_ICONS = {
   safe_haven: '🛡',
@@ -82,17 +84,15 @@ export default function CitizenDashboard() {
   return (
     <div className="layout rbac-layout">
       <header className="site-header">
-        <div className="flex-row">
-          <div className="logo cursor-pointer" onClick={() => navigate('/')}>
-            SMARTCITY<span className="dot">.</span>
-            <span className="text-sm text-cyan ml-2">USER SAFETY PORTAL</span>
-          </div>
+        <div className="flex-row gap-3 items-center">
+          <OrayaLogo variant="full" status="active" subtitle={
+            <span style={{ fontSize: '0.65rem', color: 'var(--accent)', fontFamily: 'var(--font-mono)', letterSpacing: '0.12em' }}>USER SAFETY PORTAL</span>
+          } />
         </div>
-        <div className="nav-links flex-row gap-4">
+        <div className="nav-links flex-row gap-4 items-center">
+          <div style={{ width: '140px' }}><ModeSlider /></div>
           <span className="text-sm font-mono text-cyan">ID: {user?.email}</span>
-          <button onClick={handleLogout} className="btn-secondary btn-sm" style={{ padding: '4px 8px' }}>
-            DISCONNECT
-          </button>
+          <button onClick={handleLogout} className="btn-secondary btn-sm" style={{ padding: '4px 8px' }}>DISCONNECT</button>
         </div>
       </header>
 

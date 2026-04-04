@@ -1,36 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap, CircleMarker } from 'react-leaflet';
 import * as L from 'leaflet';
 import { useTheme } from '../context/ThemeContext';
 import { fetchReports } from '../api/smartcity';
 
-const TILE_LAYER_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-const TILE_LAYER_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-// --- Initialization ---
-
-function initLeafletIcons() {
-  if (typeof window !== 'undefined' && L.Icon && L.Icon.Default) {
+function initIcons() {
+  if (typeof window !== 'undefined' && L.Icon?.Default) {
     try {
       delete L.Icon.Default.prototype._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        iconUrl:       'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl:     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
       });
-    } catch (e) {
-      console.warn('Leaflet icon init failed:', e);
-    }
+    } catch (e) { /* ignore */ }
   }
 }
 
-// --- Utility ---
-
 function MapUpdater({ center, zoom }) {
   const map = useMap();
-  useEffect(() => {
-    if (center) map.setView(center, zoom || map.getZoom());
-  }, [center, zoom, map]);
+  useEffect(() => { if (center) map.setView(center, zoom || map.getZoom()); }, [center, zoom, map]);
+  return null;
+}
+
+function MapFlyTo({ coords }) {
+  const map = useMap();
+  useEffect(() => { if (coords) map.flyTo(coords, 15, { duration: 1.5 }); }, [coords, map]);
   return null;
 }
 
@@ -44,252 +42,214 @@ function emergencyColor(level) {
   }
 }
 
-// --- Main Component ---
+// Build a GeoJSON LineString from an array of {lat,lng} waypoints or segments array
+function buildLineGeoJSON(arr, color) {
+  if (!arr || !arr.length) return null;
+  // If arr is already GeoJSON FeatureCollection or Feature
+  if (arr.type) return { ...arr, _color: color };
+  // Array of {lat, lng}
+  if (arr[0]?.lat != null) {
+    return {
+      type: 'Feature',
+      properties: { color },
+      geometry: { type: 'LineString', coordinates: arr.map(p => [p.lng, p.lat]) }
+    };
+  }
+  return null;
+}
 
 export default function Explorer({
   intersections = [],
   incidents = [],
   safeRoute = null,
+  safestRouteGeoJSON = null,
+  shortestRouteGeoJSON = null,
   safeZones = [],
   selectedIntersection = null,
+  userPosition = null, // { lat, lng } for GPS marker
   backendUrl = 'http://127.0.0.1:8000',
 }) {
   const { mode } = useTheme();
+  useEffect(() => { initIcons(); }, []);
 
-  useEffect(() => { initLeafletIcons(); }, []);
+  const [heatmapData, setHeatmapData] = useState(null);
+  const [clusterData, setClusterData] = useState(null);
+  const [liveReports, setLiveReports] = useState([]);
 
-  const [heatmapData, setHeatmapData]     = useState(null);
-  const [clusterData, setClusterData]     = useState(null);
-  const [liveReports, setLiveReports]     = useState([]);
-  const [reportsLoading, setReportsLoading] = useState(true);
+  const [showHeatmap,  setShowHeatmap]  = useState(true);
+  const [showClusters, setShowClusters] = useState(true);
+  const [showReports,  setShowReports]  = useState(true);
+  const [showSafest,   setShowSafest]   = useState(true);
+  const [showFastest,  setShowFastest]  = useState(true);
 
-  const [showHeatmap, setShowHeatmap]     = useState(true);
-  const [showClusters, setShowClusters]   = useState(true);
-  const [showReports, setShowReports]     = useState(true);
-
-  // ── Fetch live reports ────────────────────────────────────────────
-  const fetchLiveReports = async () => {
+  const fetchLive = async () => {
     try {
       const data = await fetchReports({ limit: 200 });
-      if (Array.isArray(data)) {
-        setLiveReports(data.filter(r => r.lat != null && r.lng != null));
-      }
-    } catch (e) {
-      console.warn('Live reports fetch failed (backend possibly offline):', e);
-    } finally {
-      setReportsLoading(false);
-    }
+      if (Array.isArray(data)) setLiveReports(data.filter(r => r.lat != null && r.lng != null));
+    } catch (e) { /* backend offline */ }
   };
 
   useEffect(() => {
-    fetchLiveReports();
-    const interval = setInterval(fetchLiveReports, 30000);
-    return () => clearInterval(interval);
+    fetchLive();
+    const iv = setInterval(fetchLive, 30000);
+    return () => clearInterval(iv);
   }, []);
 
-  // ── Fetch GeoJSON layers ──────────────────────────────────────────
   useEffect(() => {
     const parse = async (res) => {
       const text = await res.text();
-      let data = null;
-      try { data = text ? JSON.parse(text) : null; } catch { data = null; }
-      if (!res.ok) throw new Error(data?.detail || text || `HTTP ${res.status}`);
-      return data;
+      let d = null;
+      try { d = text ? JSON.parse(text) : null; } catch { d = null; }
+      if (!res.ok) throw new Error(d?.detail || `HTTP ${res.status}`);
+      return d;
     };
-
     fetch(`${backendUrl}/api/v1/graph/heatmap/geojson`)
-      .then(parse).then(d => setHeatmapData(d))
-      .catch(e => console.warn('Heatmap fetch (offline):', e));
-
+      .then(parse).then(d => setHeatmapData(d)).catch(() => {});
     fetch(`${backendUrl}/api/v1/cluster-info/geojson`)
-      .then(parse).then(d => setClusterData(d))
-      .catch(e => console.warn('Cluster fetch (offline):', e));
+      .then(parse).then(d => setClusterData(d)).catch(() => {});
   }, [backendUrl]);
 
-  const initialCenter = [12.9716, 77.5946];
-  const initialZoom = 14;
+  const center = [12.9716, 77.5946];
 
   const selectedNode = intersections.find(
-    n => n.intersection_id === selectedIntersection || n.zone_id === selectedIntersection,
+    n => n.intersection_id === selectedIntersection || n.zone_id === selectedIntersection
   );
   const selectedPos = selectedNode ? [selectedNode.lat, selectedNode.lng] : null;
 
-  const heatmapStyle = (feature) => ({
-    fillColor: feature.properties.danger_score > 0.7 ? '#ff3344'
-      : feature.properties.danger_score > 0.4 ? '#ffaa00' : '#00ff88',
-    fillOpacity: 0.4,
-    color: 'transparent',
-    radius: 20,
+  const heatStyle = f => ({
+    fillColor: f.properties.danger_score > 0.7 ? '#ff3344' : f.properties.danger_score > 0.4 ? '#ffaa00' : '#00ff88',
+    fillOpacity: 0.45, color: 'transparent', radius: 20,
+  });
+  const clusterStyle = f => ({
+    fillColor: '#ff3344', fillOpacity: 0.55, color: '#ff3344', weight: 2,
+    radius: 15 + (f.properties.incident_count || 0) * 2,
   });
 
-  const clusterStyle = (feature) => ({
-    fillColor: '#ff3344',
-    fillOpacity: 0.6,
-    color: '#ff3344',
-    weight: 2,
-    radius: 15 + (feature.properties.incident_count * 2),
-  });
+  // Resolve dual routes — backend returns { type:'Feature', geometry:{type:'LineString',...} }
+  // or we may have wrapped it ourselves
+  const normalizeRouteGeo = (geo, color) => {
+    if (!geo) return null;
+    // Already a Feature
+    if (geo.type === 'Feature') return geo;
+    // Bare geometry
+    if (geo.type === 'LineString' || geo.type === 'MultiLineString') {
+      return { type: 'Feature', properties: { color }, geometry: geo };
+    }
+    // FeatureCollection — take first feature
+    if (geo.type === 'FeatureCollection' && geo.features?.length) return geo.features[0];
+    return null;
+  };
 
-  const routeStyle = (feature) => ({
-    color: feature.properties.color || '#00ff88',
-    weight: 6,
-    opacity: 0.85,
-  });
+  const safestGeoNorm  = normalizeRouteGeo(safestRouteGeoJSON,  '#00ff88');
+  const fastestGeoNorm = normalizeRouteGeo(shortestRouteGeoJSON, '#3b82f6');
+
+  // Legacy single-route segments support
+  const legacySegments = (!safestGeoNorm && !fastestGeoNorm && safeRoute?.segments) ? safeRoute.segments : null;
 
   return (
-    <div className="panel panel-cut" style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
-      {/* ── HUD OVERLAY ── */}
+      {/* HUD overlay */}
       <div style={{
         position: 'absolute', top: 12, left: 16, zIndex: 1000,
-        fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-primary)',
+        fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-primary)',
         background: 'var(--bg-panel)', padding: '8px 12px', border: '1px solid var(--border)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.18)', backdropFilter: 'blur(4px)',
-        minWidth: 196,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)', minWidth: 200,
       }}>
-        <div style={{ fontWeight: 'bold', color: 'var(--accent)', marginBottom: 8 }}>TACTICAL LAYER CONTROLS</div>
-
-        <label style={{ display: 'block', cursor: 'pointer', marginBottom: 4 }}>
-          <input type="checkbox" checked={showHeatmap} onChange={e => setShowHeatmap(e.target.checked)} /> Danger Heatmap
-        </label>
-        <label style={{ display: 'block', cursor: 'pointer', marginBottom: 4 }}>
-          <input type="checkbox" checked={showClusters} onChange={e => setShowClusters(e.target.checked)} /> Incident Clusters
-        </label>
-        <label style={{ display: 'block', cursor: 'pointer' }}>
-          <input type="checkbox" checked={showReports} onChange={e => setShowReports(e.target.checked)} /> Live Reports
-          {liveReports.length > 0 && (
-            <span style={{
-              marginLeft: 6, fontSize: '0.58rem', padding: '1px 5px',
-              background: 'rgba(255,51,68,0.15)', border: '1px solid var(--red-alert)',
-              color: 'var(--red-alert)', verticalAlign: 'middle',
-            }}>{liveReports.length}</span>
-          )}
-        </label>
-
-        {showReports && liveReports.length > 0 && (
-          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '0.56rem', color: 'var(--text-secondary)', marginBottom: 4 }}>INCIDENT MARKERS</div>
-            {[
-              { label: 'CRITICAL', color: '#ff3344' },
-              { label: 'HIGH',     color: '#ff6600' },
-              { label: 'MEDIUM',   color: '#ffaa00' },
-              { label: 'LOW',      color: '#00cc66' },
-            ].map(({ label, color }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)' }}>{label}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div style={{ fontWeight: 'bold', color: 'var(--accent)', marginBottom: 8, fontSize: '0.68rem', letterSpacing: '0.15em' }}>
+          TACTICAL LAYER CONTROLS
+        </div>
+        {[
+          { label: 'Danger Heatmap',    val: showHeatmap,  set: setShowHeatmap,  color: 'var(--amber)' },
+          { label: 'Incident Clusters', val: showClusters, set: setShowClusters, color: 'var(--red-alert)' },
+          { label: `Live Reports (${liveReports.length})`, val: showReports, set: setShowReports, color: 'var(--accent)' },
+          { label: 'Safest Route',   val: showSafest,   set: setShowSafest,  color: '#00ff88' },
+          { label: 'Fastest Route',  val: showFastest,  set: setShowFastest, color: '#3b82f6' },
+        ].map(({ label, val, set, color }) => (
+          <label key={label} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginBottom: 4, gap: 6 }}>
+            <input type="checkbox" checked={val} onChange={e => set(e.target.checked)} style={{ accentColor: color }} />
+            <span style={{ fontSize: '0.65rem', color: val ? color : 'var(--text-secondary)' }}>{label}</span>
+          </label>
+        ))}
       </div>
 
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <MapContainer
-          center={initialCenter}
-          zoom={initialZoom}
-          style={{ height: '100%', width: '100%' }}
-          zoomControl={false}
-        >
+        <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
           <TileLayer
-            url={mode === 'dark' ? TILE_LAYER_DARK : TILE_LAYER_LIGHT}
+            url={mode === 'dark' ? TILE_DARK : TILE_LIGHT}
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
 
-          <MapUpdater center={selectedPos} zoom={16} />
+          {selectedPos && <MapUpdater center={selectedPos} zoom={16} />}
+          {userPosition && <MapFlyTo coords={[userPosition.lat, userPosition.lng]} />}
 
-          {/* ── HEATMAP ── */}
+          {/* Heatmap */}
           {showHeatmap && heatmapData && (
-            <GeoJSON
-              data={heatmapData}
-              pointToLayer={(feature, latlng) => L.circleMarker(latlng, heatmapStyle(feature))}
-            />
+            <GeoJSON data={heatmapData} pointToLayer={(f, ll) => L.circleMarker(ll, heatStyle(f))} />
           )}
 
-          {/* ── CLUSTERS ── */}
+          {/* Clusters */}
           {showClusters && clusterData && (
             <GeoJSON
               data={clusterData}
-              pointToLayer={(feature, latlng) => L.circleMarker(latlng, clusterStyle(feature))}
-              onEachFeature={(feature, layer) => {
-                layer.bindPopup(`
-                  <div style="font-family: monospace; color: #fff; background: rgba(10,15,25,0.92); padding: 8px;">
-                    <strong style="color: #ff3344">⚠ Alert Cluster</strong><br/>
-                    Count: ${feature.properties.incident_count}<br/>
-                    Radius: ${Math.round(feature.properties.radius_km * 1000)}m
-                  </div>
-                `);
-              }}
+              pointToLayer={(f, ll) => L.circleMarker(ll, clusterStyle(f))}
+              onEachFeature={(f, layer) => layer.bindPopup(
+                `<div style="font-family:monospace;background:rgba(10,15,25,.92);color:#fff;padding:8px;">
+                  <strong style="color:#ff3344">⚠ Alert Cluster</strong><br/>
+                  Incidents: ${f.properties.incident_count}<br/>
+                  Radius: ${Math.round((f.properties.radius_km || 0) * 1000)}m
+                </div>`
+              )}
             />
           )}
 
-          {/* ── SAFE ROUTE ── */}
-          {safeRoute?.segments && (
-            <GeoJSON data={safeRoute.segments} style={routeStyle} />
+          {/* SAFEST route — GREEN */}
+          {showSafest && safestGeoNorm && (
+            <GeoJSON
+              key={'safe_' + JSON.stringify(safestGeoNorm.geometry?.coordinates?.[0])}
+              data={safestGeoNorm}
+              style={() => ({ color: '#00ff88', weight: 6, opacity: 0.9 })}
+            />
           )}
 
-          {/* ── LIVE REPORT MARKERS (from unified /reports endpoint) ── */}
+          {/* FASTEST route — BLUE dashed */}
+          {showFastest && fastestGeoNorm && (
+            <GeoJSON
+              key={'fast_' + JSON.stringify(fastestGeoNorm.geometry?.coordinates?.[0])}
+              data={fastestGeoNorm}
+              style={() => ({ color: '#3b82f6', weight: 5, opacity: 0.8, dashArray: '8,5' })}
+            />
+          )}
+
+          {/* Legacy single-route */}
+          {legacySegments && (
+            <GeoJSON
+              data={legacySegments}
+              style={f => ({ color: f.properties?.color || '#00ff88', weight: 5, opacity: 0.85 })}
+            />
+          )}
+
+          {/* Live report markers */}
           {showReports && liveReports.map((report, idx) => {
             const color = emergencyColor(report.emergency_level);
             const sev = Math.min(5, Math.max(1, report.severity || 1));
-            const sevPct = ((sev - 1) / 4) * 100;
-            const ts = report.timestamp
-              ? new Date(report.timestamp).toLocaleString()
-              : 'Unknown time';
-
             return (
               <Marker
                 key={report.report_id || `r_${idx}`}
                 position={[report.lat, report.lng]}
                 icon={L.divIcon({
-                  className: 'report-marker-icon',
-                  html: `<div style="
-                    width:14px; height:14px;
-                    background:${color};
-                    border:2px solid rgba(255,255,255,0.8);
-                    border-radius:50%;
-                    box-shadow:0 0 8px ${color},0 0 16px ${color}44;
-                  "></div>`,
-                  iconSize: [14, 14],
-                  iconAnchor: [7, 7],
+                  className: '',
+                  html: `<div style="width:13px;height:13px;background:${color};border:2px solid rgba(255,255,255,0.8);border-radius:50%;box-shadow:0 0 8px ${color};"></div>`,
+                  iconSize: [13, 13], iconAnchor: [6, 6],
                 })}
               >
                 <Popup>
-                  <div style={{
-                    fontFamily: 'monospace', fontSize: '0.78rem',
-                    background: 'rgba(10,15,25,0.95)',
-                    color: '#e2e8f0', padding: '10px 12px', minWidth: 200,
-                    border: `1px solid ${color}55`,
-                  }}>
-                    <div style={{ color, fontWeight: 'bold', marginBottom: 6, fontSize: '0.8rem' }}>
-                      {report.emergency_level || 'REPORT'}
-                    </div>
-
-                    <div style={{ marginBottom: 6 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2, fontSize: '0.7rem' }}>
-                        <span style={{ color: '#94a3b8' }}>Severity</span>
-                        <span style={{ color }}>{sev.toFixed(1)} / 5</span>
-                      </div>
-                      <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
-                        <div style={{ height: 3, width: `${sevPct}%`, background: color, borderRadius: 2 }} />
-                      </div>
-                    </div>
-
-                    {report.incident_type && (
-                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: 4 }}>
-                        Type: <span style={{ color: '#e2e8f0' }}>{report.incident_type.replace(/_/g, ' ').toUpperCase()}</span>
-                      </div>
-                    )}
-                    {report.distress_level && (
-                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: 4 }}>
-                        Distress: <span style={{ color: '#e2e8f0' }}>{report.distress_level}</span>
-                      </div>
-                    )}
-                    <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: 6, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 6 }}>
-                      {ts}
-                    </div>
-                    <div style={{ fontSize: '0.6rem', color: '#475569', marginTop: 2 }}>
-                      {report.report_id}
+                  <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', background: 'rgba(10,15,25,.95)', color: '#e2e8f0', padding: '8px 10px', minWidth: 180, border: `1px solid ${color}44` }}>
+                    <div style={{ color, fontWeight: 'bold', marginBottom: 4 }}>{report.emergency_level || 'REPORT'}</div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.68rem' }}>Severity: <span style={{ color }}>{sev}/5</span></div>
+                    {report.incident_type && <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: 2 }}>Type: <span style={{ color: '#e2e8f0' }}>{report.incident_type.replace(/_/g,' ').toUpperCase()}</span></div>}
+                    <div style={{ fontSize: '0.6rem', color: '#475569', marginTop: 6, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 4 }}>
+                      {report.timestamp ? new Date(report.timestamp).toLocaleString() : ''}
                     </div>
                   </div>
                 </Popup>
@@ -297,62 +257,70 @@ export default function Explorer({
             );
           })}
 
-          {/* ── INTERSECTION DOTS (TigerGraph data) ── */}
-          {intersections.map(node => (
-            <Marker
-              key={node.zone_id || node.intersection_id}
-              position={[node.lat, node.lng]}
-              icon={L.divIcon({
-                className: 'custom-div-icon',
-                html: `<div style="
-                  width:10px; height:10px;
-                  background:${node.danger_score > 0.7 ? '#ff3344' : node.danger_score > 0.4 ? '#ffaa00' : '#00ff88'};
-                  border:2px solid #fff; border-radius:50%;
-                  opacity:0.75; box-shadow:0 0 6px rgba(0,0,0,0.4);
-                "></div>`,
-                iconSize: [10, 10],
-                iconAnchor: [5, 5],
-              })}
-            />
-          ))}
+          {/* Intersection dots — danger colour coded from backend */}
+          {intersections.map(node => {
+            const ds = node.danger_score ?? ((100 - (node.baseline_safety_score ?? 72)) / 100);
+            const col = ds > 0.7 ? '#ff3344' : ds > 0.4 ? '#ffaa00' : '#00ff88';
+            return (
+              <CircleMarker
+                key={node.zone_id || node.intersection_id}
+                center={[node.lat, node.lng]}
+                radius={5}
+                pathOptions={{ fillColor: col, fillOpacity: 0.75, color: '#fff', weight: 1 }}
+              >
+                <Popup>
+                  <div style={{ fontFamily: 'monospace', background: 'rgba(10,15,25,.95)', color: '#e2e8f0', padding: '6px 8px', fontSize: '0.7rem' }}>
+                    <div style={{ color: col, fontWeight: 'bold' }}>{node.intersection_name || node.zone_id}</div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.62rem', marginTop: 2 }}>
+                      Danger: {(ds * 100).toFixed(0)}% | Safety: {node.baseline_safety_score?.toFixed(0) ?? '—'}
+                    </div>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            );
+          })}
 
-          {/* ── SAFE ZONES ── */}
-          {safeZones?.map((zone, idx) => (
+          {/* Safe zones */}
+          {safeZones.map((zone, idx) => (
             <Marker
-              key={`safezone-${idx}`}
+              key={`sz-${idx}`}
               position={[zone.lat, zone.lng]}
               icon={L.divIcon({
-                className: 'safe-zone-icon',
-                html: `<div style="
-                  width:20px; height:20px; display:flex; align-items:center;
-                  justify-content:center; background:rgba(0,150,255,0.2);
-                  border:2px solid #0096ff; border-radius:4px;
-                  box-shadow:0 0 10px rgba(0,150,255,0.5); font-size:10px;
-                ">🛡️</div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10],
+                className: '',
+                html: `<div style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:rgba(0,150,255,.2);border:2px solid #0096ff;border-radius:4px;box-shadow:0 0 10px rgba(0,150,255,.5);font-size:10px;">🛡️</div>`,
+                iconSize: [20, 20], iconAnchor: [10, 10],
               })}
             >
               <Popup>
-                <div style={{ fontFamily: 'monospace', color: '#0096ff', background: 'rgba(10,15,25,0.9)', padding: '6px' }}>
+                <div style={{ fontFamily: 'monospace', color: '#0096ff', background: 'rgba(10,15,25,.9)', padding: '6px', fontSize: '0.72rem' }}>
                   <strong>{zone.name}</strong><br />
-                  Type: {zone.type.replace('_', ' ')}<br />
+                  {zone.type?.replace('_',' ')}<br />
                   {zone.is_open_now ? '✅ Open' : '❌ Closed'}
                 </div>
               </Popup>
             </Marker>
           ))}
 
-          {/* ── SELECTED NODE ── */}
-          {selectedPos && (
+          {/* User GPS position */}
+          {userPosition && (
             <Marker
-              position={selectedPos}
+              position={[userPosition.lat, userPosition.lng]}
               icon={L.divIcon({
-                className: 'pulse-amber',
-                html: `<div style="width:24px;height:24px;border:2px solid var(--amber);border-radius:50%;background:rgba(255,170,0,0.3);"></div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12],
+                className: '',
+                html: `<div style="width:18px;height:18px;background:#00ff88;border:3px solid #fff;border-radius:50%;box-shadow:0 0 16px #00ff88;animation:pulse-green 1.5s infinite;"></div>`,
+                iconSize: [18, 18], iconAnchor: [9, 9],
               })}
+            >
+              <Popup><div style={{ fontFamily: 'monospace', color: '#00ff88', padding: '4px' }}>📍 YOUR LOCATION</div></Popup>
+            </Marker>
+          )}
+
+          {/* Selected node highlight */}
+          {selectedPos && (
+            <CircleMarker
+              center={selectedPos}
+              radius={14}
+              pathOptions={{ fillColor: 'rgba(255,170,0,0.25)', fillOpacity: 1, color: 'var(--amber)', weight: 2 }}
             />
           )}
         </MapContainer>

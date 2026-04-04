@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import Explorer from '../components/Explorer';
 import { verifyIncident, getOverview, getSupervisorTrends, getInfrastructureStatus } from '../api/smartcity';
 import { useTigerGraph } from '../hooks/useTigerGraph';
+import ModeSlider from '../components/ModeSlider';
+import OrayaLogo from '../components/OrayaLogo';
 
 /* ── Tiny sparkline via SVG ───────────────────────────────── */
 function Sparkline({ data = [], color = 'var(--accent)', height = 36, width = 180 }) {
@@ -81,14 +83,14 @@ export default function SupervisorDashboard() {
   return (
     <div className="layout rbac-layout">
       <header className="site-header" style={{ borderBottomColor: 'var(--medium)' }}>
-        <div className="flex-row">
-          <div className="logo cursor-pointer" onClick={() => navigate('/')}>
-            SMARTCITY<span className="dot" style={{ color: 'var(--medium)' }}>.</span>
-            <span className="text-sm ml-2" style={{ color: 'var(--medium)' }}>SUPERVISOR OVERRIDE</span>
-          </div>
+        <div className="flex-row gap-3 items-center">
+          <OrayaLogo variant="full" status="active" subtitle={
+            <span style={{ fontSize: '0.65rem', color: 'var(--medium)', fontFamily: 'var(--font-mono)', letterSpacing: '0.12em' }}>SUPERVISOR OVERRIDE</span>
+          } />
         </div>
-        <div className="nav-links flex-row gap-4">
-          <span className="text-sm font-mono text-medium">OP ID: {user?.email}</span>
+        <div className="nav-links flex-row gap-4 items-center">
+          <div style={{ width: '140px' }}><ModeSlider /></div>
+          <span className="text-sm font-mono text-medium">OP: {user?.email}</span>
           <button onClick={handleLogout} className="btn-secondary btn-sm" style={{ padding: '4px 8px' }}>TIMEOUT</button>
         </div>
       </header>

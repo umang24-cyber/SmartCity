@@ -41,6 +41,17 @@ export default function Dashboard() {
   } = useTigerGraph();
 
   const [activeTab, setActiveTab] = React.useState('SONAR');
+  const [safestGeo, setSafestGeo]   = React.useState(null);
+  const [fastestGeo, setFastestGeo] = React.useState(null);
+  const [userPos, setUserPos]        = React.useState(null);
+
+  const handleRouteComputed = React.useCallback((routeData, src) => {
+    const sg = routeData?.safest_route?.route_geojson;
+    const fg = routeData?.shortest_route?.route_geojson;
+    if (sg) setSafestGeo({ type: 'Feature', properties: { color: '#00ff88' }, geometry: sg });
+    if (fg) setFastestGeo({ type: 'Feature', properties: { color: '#3b82f6' }, geometry: fg });
+    if (src) setUserPos(src);
+  }, []);
 
   if (isLoading) {
     return (
@@ -70,7 +81,10 @@ export default function Dashboard() {
                 intersections={intersections}
                 incidents={incidents}
                 safeRoute={safeRoute}
+                safestRouteGeoJSON={safestGeo}
+                shortestRouteGeoJSON={fastestGeo}
                 selectedIntersection={selectedIntersection}
+                userPosition={userPos}
               />
             </div>
 
@@ -158,18 +172,14 @@ export default function Dashboard() {
                 intersections={intersections}
                 incidents={incidents}
                 safeRoute={safeRoute}
+                safestRouteGeoJSON={safestGeo}
+                shortestRouteGeoJSON={fastestGeo}
                 selectedIntersection={selectedIntersection}
+                userPosition={userPos}
               />
             </div>
-            <div style={{ height: '360px', flexShrink: 0 }}>
-              <SafeRoutePanel 
-                safeRoute={safeRoute} 
-                intersections={intersections}
-                routeStart={routeStart}
-                setRouteStart={setRouteStart}
-                routeEnd={routeEnd}
-                setRouteEnd={setRouteEnd}
-              />
+            <div style={{ height: '420px', flexShrink: 0, overflowY: 'auto', padding: '0 0.5rem' }}>
+              <SafeRoutePanel onRouteComputed={handleRouteComputed} />
             </div>
           </div>
         );

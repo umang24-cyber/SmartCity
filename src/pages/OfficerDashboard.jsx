@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import Explorer from '../components/Explorer';
 import { getActiveIncidents, respondToIncident, getAssignments, getPatrolSafeZones } from '../api/smartcity';
 import { useTigerGraph } from '../hooks/useTigerGraph';
+import ModeSlider from '../components/ModeSlider';
+import OrayaLogo from '../components/OrayaLogo';
 
 const ZONE_TYPE_META = {
   safe_haven: { icon: '🛡', color: 'var(--accent)' },
@@ -72,21 +74,16 @@ export default function OfficerDashboard() {
   return (
     <div className="layout rbac-layout">
       <header className="site-header" style={{ borderBottomColor: 'var(--danger)' }}>
-        <div className="flex-row">
-          <div className="logo cursor-pointer" onClick={() => navigate('/')}>
-            SMARTCITY<span className="dot" style={{ color: 'var(--danger)' }}>.</span>
-            <span className="text-sm ml-2" style={{ color: 'var(--danger)' }}>RAPID RESPONSE UNIT</span>
-          </div>
+        <div className="flex-row gap-3 items-center">
+          <OrayaLogo variant="full" status="alert" subtitle={
+            <span style={{ fontSize: '0.65rem', color: 'var(--danger)', fontFamily: 'var(--font-mono)', letterSpacing: '0.12em' }}>RAPID RESPONSE UNIT</span>
+          } />
         </div>
-        <div className="nav-links flex-row gap-4">
+        <div className="nav-links flex-row gap-4 items-center">
+          <div style={{ width: '140px' }}><ModeSlider /></div>
           <span className="text-sm font-mono text-danger">UNIT: {user?.email}</span>
-          {/* Quick stats in header */}
-          <span className="text-[10px] font-mono text-gray-400 hidden sm:block">
-            ACTIVE: <span className="text-danger font-bold">{activeTasks.length}</span>
-          </span>
-          <button onClick={handleLogout} className="btn-secondary btn-sm" style={{ padding: '4px 8px', color: 'var(--danger)', borderColor: 'var(--danger)' }}>
-            STAND DOWN
-          </button>
+          {activeTasks.length > 0 && <span className="text-[10px] font-mono" style={{ color: 'var(--danger)', background: 'rgba(255,51,68,0.1)', padding: '2px 6px', border: '1px solid var(--danger)' }}>ACTIVE: {activeTasks.length}</span>}
+          <button onClick={handleLogout} className="btn-secondary btn-sm" style={{ padding: '4px 8px', color: 'var(--danger)', borderColor: 'var(--danger)' }}>STAND DOWN</button>
         </div>
       </header>
 
