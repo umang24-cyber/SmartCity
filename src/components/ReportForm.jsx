@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { postReport, analyzeReport } from '../api/smartcity';
+import { submitAndAnalyzeReport } from '../api/smartcity';
 
 const VALID_TYPES = [
   { value: 'poor_lighting',       label: 'POOR LIGHTING' },
@@ -28,35 +28,24 @@ export default function ReportForm() {
     setStatus('loading');
     setErrorMsg('');
     try {
-      const payload = {
-        lat: parseFloat(form.lat),
-        lng: parseFloat(form.lng),
+      const res = await submitAndAnalyzeReport({
+        text: form.description || `${form.incident_type} incident reported at [${form.lat}, ${form.lng}]`,
+        lat: form.lat ? parseFloat(form.lat) : null,
+        lng: form.lng ? parseFloat(form.lng) : null,
         incident_type: form.incident_type,
-        severity: form.severity,
-        description: form.description,
-      };
-      const res = await postReport(payload);
-      setIncidentId(res.incident_id || 'INC_' + Date.now());
+        source: 'dispatch_console',
+      });
 
-      if (form.description && form.description.length >= 5) {
-        try {
-          const nlpRes = await analyzeReport(form.description);
-          setNlpData(nlpRes);
-        } catch (nlpErr) {
-          console.warn('NLP Analysis skipped:', nlpErr);
-          setNlpData(null);
-        }
-      } else {
-        setNlpData(null);
-      }
-
+      setIncidentId(res.report_id || 'RPT_' + Date.now());
+      setNlpData(res);
       setStatus('success');
+
       setTimeout(() => {
         setStatus(null);
         setForm({ lat: '', lng: '', incident_type: 'poor_lighting', severity: 3, description: '' });
         setIncidentId('');
         setNlpData(null);
-      }, 6000);
+      }, 8000);
     } catch (err) {
       setErrorMsg(typeof err === 'object' && err !== null && err.message ? err.message : 'DISPATCH FAILED');
       setStatus('error');
@@ -101,9 +90,9 @@ export default function ReportForm() {
       {status === 'success' && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 20,
-          background: 'rgba(3,13,24,0.95)',
+          background: 'rgba(3,13,24,0.97)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          gap: '0.75rem',
+          gap: '0.75rem', padding: '1.25rem',
         }}
           className="fade-in"
         >
@@ -113,21 +102,88 @@ export default function ReportForm() {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
             {incidentId}
           </div>
-          <div className="led led-green pulse-green" style={{ width: 12, height: 12, marginBottom: 8 }} />
-          
-          {nlpData && (
-            <div style={{ background: 'rgba(0,255,136,0.05)', border: '1px solid var(--border)', padding: '1rem', width: '85%' }}>
-              <div className="label-xs" style={{ color: 'var(--accent)', marginBottom: 6 }}>NLP ANALYSIS</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div><strong>Classification:</strong> {nlpData.emergency_level} EMERGENCY</div>
-                <div><strong>Calc Severity:</strong> {(nlpData.severity || 1).toFixed(1)} / 5.0</div>
-                <div><strong>Keywords:</strong> {(nlpData.matched_keywords || []).join(', ') || 'None'}</div>
+          <div className="led led-green pulse-green" style={{ width: 12, height: 12, marginBottom: 4 }} />
+
+          {nlpData && (() => {
+            const level = nlpData.emergency_level || 'NORMAL';
+            const levelColor = level === 'CRITICAL' ? 'var(--red-alert)'
+              : level === 'HIGH' ? '#ff6600'
+              : level === 'MEDIUM' ? 'var(--amber)'
+              : level === 'LOW' ? 'var(--accent)'
+              : 'var(--text-secondary)';
+            const sev = Math.min(5, Math.max(1, nlpData.severity || 1));
+            const sevPct = ((sev - 1) / 4) * 100;
+            const distress = nlpData.distress_level || 'LOW';
+            const keywords = (nlpData.matched_keywords || []).slice(0, 6);
+
+            return (
+              <div style={{
+                background: 'rgba(0,255,136,0.04)',
+                border: '1px solid var(--border)',
+                padding: '0.9rem',
+                width: '90%',
+                display: 'flex', flexDirection: 'column', gap: '0.5rem',
+              }}>
+                <div className="label-xs" style={{ color: 'var(--accent)', marginBottom: 2 }}>NLP ANALYSIS COMPLETE</div>
+
+                {/* Emergency level badge */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--text-secondary)' }}>EMERGENCY LEVEL</span>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: '0.6rem', padding: '2px 8px',
+                    border: `1px solid ${levelColor}`, color: levelColor,
+                    background: `${levelColor}18`, letterSpacing: '0.1em',
+                  }}>
+                    {level}
+                  </span>
+                </div>
+
+                {/* Severity bar */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-secondary)' }}>SEVERITY</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: levelColor }}>{sev.toFixed(1)} / 5.0</span>
+                  </div>
+                  <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
+                    <div style={{
+                      height: 3, width: `${sevPct}%`, borderRadius: 2,
+                      background: levelColor,
+                      boxShadow: `0 0 6px ${levelColor}`,
+                      transition: 'width 0.6s ease',
+                    }} />
+                  </div>
+                </div>
+
+                {/* Distress */}
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-secondary)' }}>DISTRESS</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: distress === 'HIGH' ? 'var(--red-alert)' : distress === 'MEDIUM' ? 'var(--amber)' : 'var(--text-secondary)' }}>{distress}</span>
+                </div>
+
+                {/* Keywords */}
+                {keywords.length > 0 && (
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-secondary)', marginBottom: 4 }}>MATCHED KEYWORDS</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {keywords.map(kw => (
+                        <span key={kw} style={{
+                          fontFamily: 'var(--font-mono)', fontSize: '0.58rem',
+                          padding: '1px 6px', border: '1px solid var(--border)',
+                          color: 'var(--text-primary)', background: 'rgba(255,255,255,0.03)',
+                        }}>{kw}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {nlpData.is_duplicate && (
-                  <div style={{ color: 'var(--amber)', marginTop: 4 }}>[!] Possible Duplicate</div>
+                  <div style={{ color: 'var(--amber)', fontFamily: 'var(--font-mono)', fontSize: '0.62rem', marginTop: 2 }}>
+                    [!] POSSIBLE DUPLICATE REPORT
+                  </div>
                 )}
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
       {status === 'error' && (

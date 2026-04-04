@@ -35,6 +35,20 @@
     },
     "incidents": [
         {
+            "incident_id": "SOS_A76821B3",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-04-04T16:19:58.705765+00:00",
+            "source": "sos_alert",
+            "lat": 12.9716,
+            "lng": 77.5946,
+            "location_id": "12.9716_77.5946",
+            "verified": true
+        },
+        {
             "incident_id": "SOS_5429C2",
             "incident_type": "sos_alert",
             "severity": "critical",
