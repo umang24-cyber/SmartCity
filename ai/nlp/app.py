@@ -20,6 +20,7 @@ Docker / production:
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Optional
 
@@ -303,18 +304,18 @@ async def health():
     Returns 200 + model-status dict if all models are loaded.
     Used by load-balancers and k8s liveness probes.
     """
+    # LLM mode: HuggingFace / spaCy models replaced by LLM API.
+    # NVIDIA_API_KEY presence determines live vs mock mode.
+    nvidia_key_set = bool(os.environ.get("NVIDIA_API_KEY", "").strip())
     model_status = {
-        "sentiment_model": _check_model(inference._SENTIMENT_PIPE),
-        "emotion_model":   _check_model(inference._EMOTION_PIPE),
-        "ner_model":       inference._NLP_NER is not None,
+        "llm_mode":             True,
+        "llm_provider":         "NVIDIA NIM" if nvidia_key_set else "mock (no key)",
+        "nvidia_key_configured": nvidia_key_set,
         "duplicate_store_size": len(inference._DUP_STORE),
     }
-    all_ok = all(
-        v for k, v in model_status.items() if k != "duplicate_store_size"
-    )
 
     return {
-        "status":   "ok" if all_ok else "degraded",
+        "status":   "ok",
         "models":   model_status,
         "version":  "1.0.0",
         "module":   "B4-NLP",

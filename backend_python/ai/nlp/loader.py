@@ -178,7 +178,7 @@ def load_nlp_pipeline() -> dict[str, Any]:
         return _bundle
 
     logger.info(
-        "✅ NLP pipeline ready (DistilBERT + RoBERTa + spaCy) in %.1f s",
+        "✅ NLP pipeline ready (LLM mode — NVIDIA NIM / mock) in %.1f s",
         time.perf_counter() - t0,
     )
 

@@ -1,4 +1,4 @@
-﻿// src/api/smartcity.js
+// src/api/smartcity.js
 // Unified API client with defensive parsing + response normalization.
 
 const API_ORIGIN = (import.meta.env.VITE_API_ORIGIN || 'http://127.0.0.1:8000').replace(/\/$/, '');
@@ -187,8 +187,35 @@ export const fetchIncidents = async (verifiedOnly = false) => {
 export const postReport = async (reportData, token) =>
   apiPost('/reports', reportData, token);
 
+/**
+ * submitAndAnalyzeReport — the canonical ONE-CALL submission path.
+ *
+ * Sends text + optional location/metadata to POST /reports.
+ * Backend runs NLP and returns the full enriched analysis.
+ *
+ * @param {Object} payload  - { text, lat?, lng?, incident_type?, source? }
+ * @param {string} [token]  - JWT bearer token (optional for public reports)
+ * @returns {Promise<Object>} Full EnrichedReportResponse from backend
+ */
+export const submitAndAnalyzeReport = async (payload, token = null) =>
+  apiPost('/reports', payload, token);
+
 export const analyzeReport = async (text, token = null) =>
   apiPost('/reports/analyze', { text }, token);
+
+/**
+ * fetchReports — retrieve stored enriched reports, optionally filtered.
+ *
+ * @param {{ minSeverity?: number, emergencyLevel?: string, limit?: number }} opts
+ */
+export const fetchReports = async ({ minSeverity, emergencyLevel, limit = 200 } = {}) => {
+  const params = new URLSearchParams();
+  if (minSeverity != null) params.set('min_severity', minSeverity);
+  if (emergencyLevel)       params.set('emergency_level', emergencyLevel);
+  if (limit != null)        params.set('limit', limit);
+  const qs = params.toString();
+  return apiFetch(qs ? `/reports?${qs}` : '/reports');
+};
 
 
 // Route Operations
