@@ -272,6 +272,12 @@ export const fetchClusterInfo = async (cluster_id = 1) => {
 export const getOverview = async (token) =>
   apiFetch('/supervisor/dashboard/overview', token);
 
+export const getSupervisorTrends = async (token) =>
+  apiFetch('/supervisor/dashboard/trends', token);
+
+export const getInfrastructureStatus = async (token) =>
+  apiFetch('/supervisor/infrastructure/status', token);
+
 export const verifyIncident = async (id, verified, note, token) => {
   return apiFetch(`/supervisor/incidents/${id}/verify`, token, {
     method: 'PATCH',
@@ -287,6 +293,9 @@ export const getAssignments = async (token) =>
 
 export const getActiveIncidents = async (token) =>
   apiFetch('/patrol/active-incidents', token);
+
+export const getPatrolSafeZones = async (token) =>
+  apiFetch('/patrol/safe-zones', token);
 
 export const respondToIncident = async (id, body, token) => {
   return apiFetch(`/patrol/incidents/${id}/respond`, token, {
