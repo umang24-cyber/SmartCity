@@ -227,7 +227,8 @@ export const getSafeRoute = async (start, end) => {
 
 export const fetchSafeRoute = async (start_lat, start_lng, end_lat, end_lng) => {
   if (!start_lat) {
-    const payload = await apiFetch('/safe-route/?start_lat=12.9716&start_lng=77.5946&end_lat=12.9738&end_lng=77.5965');
+    // Chandigarh demo: Sector 17 Plaza → Sector 43 ISBT
+    const payload = await apiFetch('/safe-route/?start_lat=30.7414&start_lng=76.7682&end_lat=30.7076&end_lng=76.7897');
     return normalizeSafeRoute(payload);
   }
   const payload = await apiFetch(`/safe-route/?start_lat=${start_lat}&start_lng=${start_lng}&end_lat=${end_lat}&end_lng=${end_lng}`);
@@ -372,40 +373,39 @@ export const MOCK_DANGER = {
 };
 
 export const MOCK_INCIDENTS = [
-  { incident_id: 'INC_001', incident_type: 'poor_lighting', severity: 4, reported_at: '2025-01-15T21:30:00Z', verified: true, source: 'user_report', lat: 12.9698, lng: 77.5981 },
-  { incident_id: 'INC_002', incident_type: 'felt_followed', severity: 5, reported_at: '2025-01-15T23:10:00Z', verified: true, source: 'user_report', lat: 12.9763, lng: 77.5929 },
-  { incident_id: 'INC_003', incident_type: 'broken_cctv', severity: 3, reported_at: '2025-01-14T19:45:00Z', verified: false, source: 'user_report', lat: 12.9720, lng: 77.5950 },
-  { incident_id: 'INC_004', incident_type: 'suspicious_activity', severity: 4, reported_at: '2025-01-15T22:00:00Z', verified: true, source: 'user_report', lat: 12.9745, lng: 77.5960 },
+  { incident_id: 'INC_001', incident_type: 'poor_lighting',       severity: 4, reported_at: '2026-04-04T21:30:00Z', verified: false, source: 'user_report', lat: 30.7018, lng: 76.8012 },
+  { incident_id: 'INC_002', incident_type: 'felt_followed',       severity: 5, reported_at: '2026-04-04T23:10:00Z', verified: false, source: 'user_report', lat: 30.6998, lng: 76.7929 },
+  { incident_id: 'INC_003', incident_type: 'broken_cctv',         severity: 3, reported_at: '2026-04-04T19:45:00Z', verified: false, source: 'user_report', lat: 30.7178, lng: 76.8101 },
+  { incident_id: 'INC_004', incident_type: 'suspicious_activity', severity: 4, reported_at: '2026-04-04T22:00:00Z', verified: false, source: 'user_report', lat: 30.7076, lng: 76.7897 },
 ];
 
 export const MOCK_ROUTE = {
   route: [
-    { intersection_id: 'INT_001', lat: 12.9716, lng: 77.5946 },
-    { intersection_id: 'INT_004', lat: 12.9725, lng: 77.5958 },
-    { intersection_id: 'INT_005', lat: 12.9738, lng: 77.5965 },
+    { intersection_id: 'INT_17A',  lat: 30.7414, lng: 76.7682 },
+    { intersection_id: 'INT_MHW',  lat: 30.7389, lng: 76.7854 },
+    { intersection_id: 'INT_22',   lat: 30.7333, lng: 76.7794 },
   ],
   reason: [
-    '3 functional streetlights (avg 85 lux)',
-    'CCTV at INT_001 - 90% effective',
-    'Avoids INT_003 (isolation 0.78)',
+    '4 functional streetlights on Madhya Marg',
+    'CCTV at Sector 17 Plaza — 92% effective',
+    'Avoids Sector 46 (danger 0.72)',
     'No verified incidents in last 48h',
   ],
-  avoided_intersections: ['INT_003'],
-  total_distance_m: 380,
-  safety_improvement_vs_shortest: '+22 points',
+  avoided_intersections: ['INT_46', 'INT_47'],
+  total_distance_m: 520,
+  safety_improvement_vs_shortest: '+28 points',
 };
 
 export const MOCK_CLUSTER = {
   cluster_id: 1,
-  cluster_name: 'Central Business District',
-  avg_cluster_safety: 64.0,
-  num_intersections: 18,
-  primary_risk_factors: ['poor_lighting', 'high_incident_rate_weekends', 'late_night_isolation'],
+  cluster_name: 'Chandigarh Central Zone',
+  avg_cluster_safety: 68.0,
+  num_intersections: 12,
+  primary_risk_factors: ['poor_lighting_south_sectors', 'high_incident_rate_weekends', 'late_night_isolation_sector_47'],
   recommended_interventions: [
-    'Install 4 streetlights on Residency Road south end',
-    'Deploy mobile CCTV unit on weekends',
-    'Add emergency button near Brigade Rd ATM cluster',
+    'Install 6 streetlights on Sector 46 road',
+    'Deploy mobile CCTV unit at ISBT on weekends',
+    'Add emergency button near Sector 43 ATM cluster',
   ],
-  cluster_type: 'commercial',
+  cluster_type: 'mixed',
 };
-

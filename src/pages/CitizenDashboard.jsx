@@ -53,7 +53,7 @@ export default function CitizenDashboard() {
   const handleSOS = async () => {
     setSosStatus('SENDING');
     try {
-      let lat = 12.9716, lng = 77.5946;
+      let lat = 30.7333, lng = 76.7794; // Chandigarh fallback
       if (navigator.geolocation) {
         await new Promise((resolve) => {
           navigator.geolocation.getCurrentPosition(

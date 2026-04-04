@@ -167,12 +167,17 @@ export default function SupervisorDashboard() {
         </div>
       )}
 
-      <div className="overlay-panel side-panel" style={{ right: '20px', top: '80px', bottom: '20px', width: '320px', borderColor: 'var(--medium)' }}>
-        <h2 className="panel-title mb-2" style={{ color: 'var(--medium)' }}>UNVERIFIED LOGS</h2>
+      <div className="overlay-panel side-panel" style={{ right: '20px', top: '80px', bottom: '20px', width: '340px', borderColor: 'var(--medium)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexShrink: 0 }}>
+          <h2 className="panel-title" style={{ color: 'var(--medium)', margin: 0 }}>INCIDENT REVIEW</h2>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', padding: '2px 8px', background: 'rgba(255,170,0,0.1)', border: '1px solid var(--amber)', color: 'var(--amber)' }}>
+            {unverified.length} PENDING
+          </span>
+        </div>
 
         {/* Trends sparklines — /supervisor/dashboard/trends */}
         {trendData.length > 0 && (
-          <div className="mb-3 p-3 rounded" style={{ border: '1px solid var(--border)', background: 'rgba(0,0,0,0.2)' }}>
+          <div className="mb-3 p-3 rounded" style={{ border: '1px solid var(--border)', background: 'rgba(0,0,0,0.2)', flexShrink: 0 }}>
             <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Safety Trend</div>
             <div className="flex-row justify-between items-end">
               <Sparkline data={trendData} color="var(--accent)" />
@@ -196,13 +201,13 @@ export default function SupervisorDashboard() {
           </div>
         )}
 
-        <div className="text-xs text-gray-300 mb-3 p-2 bg-medium/5 border-l-2 border-medium">
+        <div className="text-xs text-gray-300 mb-3 p-2 bg-medium/5 border-l-2 border-medium" style={{ flexShrink: 0 }}>
           AI Ops Insight: focus first on repeated reports in the same zone to reduce escalation risk faster.
         </div>
 
         {/* Incidents by type breakdown from stats */}
         {stats?.incidents_by_type && (
-          <div className="mb-3 p-3 rounded" style={{ border: '1px solid var(--border)' }}>
+          <div className="mb-3 p-3 rounded" style={{ border: '1px solid var(--border)', flexShrink: 0 }}>
             <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Incident Breakdown</div>
             {Object.entries(stats.incidents_by_type).map(([type, count]) => (
               <div key={type} className="flex-row justify-between mb-1">
@@ -213,29 +218,83 @@ export default function SupervisorDashboard() {
           </div>
         )}
 
-        <div className="flex-col gap-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 420px)' }}>
+        <div className="flex-col gap-2 overflow-y-auto" style={{ flex: 1, paddingBottom: '8px' }}>
           {unverified.length === 0 ? (
             <div className="text-gray-400 text-sm italic py-8 text-center border border-dashed border-gray-700 rounded">
-              Clear. No pending verifications.
+              ✓ Clear. No pending verifications.
             </div>
-          ) : unverified.map(inc => (
-            <div key={inc.incident_id} className="p-3 border border-medium/30 rounded bg-medium/5 hover:bg-medium/10 transition">
-              <div className="flex-row justify-between mb-1">
-                <span className="text-xs text-medium font-mono">{inc.incident_id}</span>
-                <span className={`text-[10px] font-bold px-1 rounded ${inc.severity >= 4 ? 'bg-danger text-white' : 'bg-amber text-black'}`}>
-                  SEV:{inc.severity}
-                </span>
+          ) : unverified.map(inc => {
+            const emLvl = (inc.emergency_level || 'MEDIUM').toUpperCase();
+            const emColor = emLvl === 'CRITICAL' ? '#ff3344' : emLvl === 'HIGH' ? '#ff6600' : emLvl === 'MEDIUM' ? '#ffaa00' : '#00cc66';
+            const sev = inc.severity_score ?? (typeof inc.severity === 'number' ? inc.severity / 5 : 0.5);
+            return (
+              <div key={inc.incident_id} style={{
+                padding: '12px', border: `1px solid ${emColor}33`, borderLeft: `3px solid ${emColor}`,
+                borderRadius: '4px', background: `${emColor}06`, transition: 'all 0.2s',
+              }}>
+                {/* Header row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                  <div>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--text-secondary)' }}>{inc.incident_id}</span>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#fff', fontWeight: 'bold', marginTop: '2px' }}>
+                      {inc.incident_type?.replace(/_/g, ' ').toUpperCase() || 'UNKNOWN'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
+                    <span style={{ fontSize: '0.58rem', fontWeight: 'bold', padding: '2px 6px', background: `${emColor}22`, color: emColor, border: `1px solid ${emColor}44`, borderRadius: '2px' }}>
+                      {emLvl}
+                    </span>
+                    <span style={{ fontSize: '0.56rem', color: 'var(--text-secondary)' }}>
+                      SEV {(sev * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Text excerpt */}
+                {inc.text && (
+                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.75)', marginBottom: '6px', lineHeight: 1.5, borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '8px', fontStyle: 'italic' }}>
+                    "{inc.text.length > 80 ? inc.text.slice(0, 80) + '…' : inc.text}"
+                  </div>
+                )}
+
+                {/* Meta row */}
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '8px', fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
+                  <span>{inc.source === 'user_report' ? '👤 Citizen Report' : '🤖 AI Detected'}</span>
+                  {inc.timestamp && <span>🕐 {new Date(inc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                  {inc.location_id && <span>📍 {inc.location_id}</span>}
+                </div>
+
+                {/* Severity bar */}
+                <div style={{ height: '2px', background: 'rgba(255,255,255,0.08)', borderRadius: '1px', marginBottom: '8px' }}>
+                  <div style={{ height: '2px', width: `${sev * 100}%`, background: emColor, borderRadius: '1px', transition: 'width 0.5s ease' }} />
+                </div>
+
+                {/* Action buttons */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <button
+                    onClick={() => handleVerify(inc.incident_id, 'verify')}
+                    style={{
+                      padding: '7px 0', fontFamily: 'var(--font-mono)', fontSize: '0.68rem', letterSpacing: '0.1em',
+                      background: 'rgba(0,255,136,0.1)', color: 'var(--accent)', border: '1px solid var(--accent)',
+                      cursor: 'pointer', transition: 'all 0.2s', borderRadius: '2px',
+                    }}
+                  >
+                    ✔ VERIFY
+                  </button>
+                  <button
+                    onClick={() => handleVerify(inc.incident_id, 'reject')}
+                    style={{
+                      padding: '7px 0', fontFamily: 'var(--font-mono)', fontSize: '0.68rem', letterSpacing: '0.1em',
+                      background: 'rgba(255,51,68,0.1)', color: 'var(--red-alert)', border: '1px solid var(--red-alert)',
+                      cursor: 'pointer', transition: 'all 0.2s', borderRadius: '2px',
+                    }}
+                  >
+                    ✕ REJECT
+                  </button>
+                </div>
               </div>
-              <div className="text-sm mb-2 text-white font-medium">{inc.incident_type?.replace?.('_', ' ').toUpperCase()}</div>
-              <div className="text-[10px] text-gray-500 mb-3">
-                {inc.source === 'user_report' ? '👤 Reported by Citizen' : '🤖 Detected by AI System'}
-              </div>
-              <div className="flex-row gap-2 mt-2">
-                <button className="flex-1 btn-sm bg-safe/20 text-safe border border-safe hover:bg-safe hover:text-black transition" onClick={() => handleVerify(inc.incident_id, 'verify')}>VERIFY</button>
-                <button className="flex-1 btn-sm bg-danger/20 text-danger border border-danger hover:bg-danger hover:text-white transition" onClick={() => handleVerify(inc.incident_id, 'reject')}>REJECT</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

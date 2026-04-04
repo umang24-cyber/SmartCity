@@ -34,10 +34,10 @@ async def get_sos_contacts(current_user: dict = Depends(require_role(["user", "c
         "emergency": "112",
         "women_helpline": "1091",
         "nearest_police_box": {
-            "name": "Cubbon Park Police Box",
-            "lat": 12.9770,
-            "lng": 77.5930,
-            "distance_m": 450
+            "name": "Sector 17 Police Station",
+            "lat": 30.7414,
+            "lng": 76.7682,
+            "distance_m": 350
         }
     }
 
@@ -45,28 +45,34 @@ async def get_sos_contacts(current_user: dict = Depends(require_role(["user", "c
 async def get_safe_zones(current_user: dict = Depends(require_role(["user", "citizen"]))):
     return [
         {
-            "name": "MG Road Metro Station",
+            "name": "Sector 17 Metro Bus Stand",
             "type": "safe_haven",
-            "lat": 12.9754,
-            "lng": 77.5985,
-            "is_open_now": True,
-            "closing_time": "23:00"
+            "lat": 30.7403, "lng": 76.7714,
+            "is_open_now": True, "closing_time": "23:00"
         },
         {
-            "name": "Cubbon Park Police Station",
+            "name": "Sector 17 Police Station",
             "type": "police_station",
-            "lat": 12.9760,
-            "lng": 77.5940,
-            "is_open_now": True,
-            "closing_time": "24:00"
+            "lat": 30.7414, "lng": 76.7682,
+            "is_open_now": True, "closing_time": "24:00"
         },
         {
-            "name": "Mallya Hospital",
+            "name": "Government Multi Speciality Hospital Sector 16",
             "type": "hospital",
-            "lat": 12.9710,
-            "lng": 77.5950,
-            "is_open_now": True,
-            "closing_time": "24:00"
+            "lat": 30.7456, "lng": 76.7670,
+            "is_open_now": True, "closing_time": "24:00"
+        },
+        {
+            "name": "PGI Chandigarh",
+            "type": "hospital",
+            "lat": 30.7643, "lng": 76.7760,
+            "is_open_now": True, "closing_time": "24:00"
+        },
+        {
+            "name": "Sector 22 Police Post",
+            "type": "police_station",
+            "lat": 30.7333, "lng": 76.7794,
+            "is_open_now": True, "closing_time": "24:00"
         }
     ]
 

@@ -25,6 +25,7 @@ export default function PublicCitizenPortal() {
   // Dual route state — set by SafeRoutePanel callback
   const [safestGeo, setSafestGeo] = useState(null);
   const [fastestGeo, setFastestGeo] = useState(null);
+  const [balancedGeo, setBalancedGeo] = useState(null);
 
   // Report form state
   const [reportText, setReportText] = useState('');
@@ -48,7 +49,7 @@ export default function PublicCitizenPortal() {
   const handleSOS = async () => {
     setSosStatus('SENDING');
     try {
-      let lat = 12.9716, lng = 77.5946;
+      let lat = 30.7333, lng = 76.7794; // Chandigarh fallback
       if (userPos) { lat = userPos.lat; lng = userPos.lng; }
       await postSOS(lat, lng, 'EMERGENCY SOS via Public Portal');
       setSosStatus('SENT');
@@ -65,7 +66,7 @@ export default function PublicCitizenPortal() {
     setReportError(null);
     setReportResult(null);
     try {
-      let lat = 12.9716, lng = 77.5946;
+      let lat = 30.7333, lng = 76.7794; // Chandigarh fallback
       if (userPos) { lat = userPos.lat; lng = userPos.lng; }
       const res = await submitAndAnalyzeReport({
         text: reportText,
@@ -83,12 +84,9 @@ export default function PublicCitizenPortal() {
   };
 
   const handleRouteComputed = useCallback((data, src) => {
-    // Backend returns route_geojson as a GeoJSON Feature already
-    const safest  = data?.safest_route?.route_geojson;
-    const fastest = data?.shortest_route?.route_geojson;
-    // Pass them directly — Explorer's normalizeRouteGeo handles both Feature + geometry
-    setSafestGeo(safest || null);
-    setFastestGeo(fastest || null);
+    setSafestGeo(data?.safest_route?.route_geojson || null);
+    setFastestGeo(data?.fastest_route?.route_geojson || data?.shortest_route?.route_geojson || null);
+    setBalancedGeo(data?.balanced_route?.route_geojson || null);
     if (src) setUserPos(src);
   }, []);
 
@@ -285,6 +283,7 @@ export default function PublicCitizenPortal() {
             incidents={incidents}
             safestRouteGeoJSON={safestGeo}
             shortestRouteGeoJSON={fastestGeo}
+            balancedRouteGeoJSON={balancedGeo}
             safeZones={safeZones}
             selectedIntersection={selectedIntersection}
             userPosition={userPos}

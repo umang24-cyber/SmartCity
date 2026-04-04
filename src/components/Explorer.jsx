@@ -64,9 +64,10 @@ export default function Explorer({
   safeRoute = null,
   safestRouteGeoJSON = null,
   shortestRouteGeoJSON = null,
+  balancedRouteGeoJSON = null,
   safeZones = [],
   selectedIntersection = null,
-  userPosition = null, // { lat, lng } for GPS marker
+  userPosition = null,
   backendUrl = 'http://127.0.0.1:8000',
 }) {
   const { mode } = useTheme();
@@ -81,6 +82,7 @@ export default function Explorer({
   const [showReports,  setShowReports]  = useState(true);
   const [showSafest,   setShowSafest]   = useState(true);
   const [showFastest,  setShowFastest]  = useState(true);
+  const [showBalanced, setShowBalanced] = useState(true);
 
   const fetchLive = async () => {
     try {
@@ -109,7 +111,7 @@ export default function Explorer({
       .then(parse).then(d => setClusterData(d)).catch(() => {});
   }, [backendUrl]);
 
-  const center = [12.9716, 77.5946];
+  const center = [30.7333, 76.7794]; // Chandigarh
 
   const selectedNode = intersections.find(
     n => n.intersection_id === selectedIntersection || n.zone_id === selectedIntersection
@@ -140,8 +142,9 @@ export default function Explorer({
     return null;
   };
 
-  const safestGeoNorm  = normalizeRouteGeo(safestRouteGeoJSON,  '#00ff88');
-  const fastestGeoNorm = normalizeRouteGeo(shortestRouteGeoJSON, '#3b82f6');
+  const safestGeoNorm   = normalizeRouteGeo(safestRouteGeoJSON,    '#00ff88');
+  const fastestGeoNorm  = normalizeRouteGeo(shortestRouteGeoJSON,  '#3b82f6');
+  const balancedGeoNorm = normalizeRouteGeo(balancedRouteGeoJSON,  '#f59e0b');
 
   // Legacy single-route segments support
   const legacySegments = (!safestGeoNorm && !fastestGeoNorm && safeRoute?.segments) ? safeRoute.segments : null;
@@ -163,8 +166,9 @@ export default function Explorer({
           { label: 'Danger Heatmap',    val: showHeatmap,  set: setShowHeatmap,  color: 'var(--amber)' },
           { label: 'Incident Clusters', val: showClusters, set: setShowClusters, color: 'var(--red-alert)' },
           { label: `Live Reports (${liveReports.length})`, val: showReports, set: setShowReports, color: 'var(--accent)' },
-          { label: 'Safest Route',   val: showSafest,   set: setShowSafest,  color: '#00ff88' },
-          { label: 'Fastest Route',  val: showFastest,  set: setShowFastest, color: '#3b82f6' },
+          { label: '🟢 Safest Route',   val: showSafest,   set: setShowSafest,   color: '#00ff88' },
+          { label: '🔵 Fastest Route',  val: showFastest,  set: setShowFastest,  color: '#3b82f6' },
+          { label: '🟡 Balanced Route', val: showBalanced, set: setShowBalanced, color: '#f59e0b' },
         ].map(({ label, val, set, color }) => (
           <label key={label} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginBottom: 4, gap: 6 }}>
             <input type="checkbox" checked={val} onChange={e => set(e.target.checked)} style={{ accentColor: color }} />
@@ -218,6 +222,15 @@ export default function Explorer({
               key={'fast_' + JSON.stringify(fastestGeoNorm.geometry?.coordinates?.[0])}
               data={fastestGeoNorm}
               style={() => ({ color: '#3b82f6', weight: 5, opacity: 0.8, dashArray: '8,5' })}
+            />
+          )}
+
+          {/* BALANCED route — AMBER dashed-dot */}
+          {showBalanced && balancedGeoNorm && (
+            <GeoJSON
+              key={'bal_' + JSON.stringify(balancedGeoNorm.geometry?.coordinates?.[0])}
+              data={balancedGeoNorm}
+              style={() => ({ color: '#f59e0b', weight: 4, opacity: 0.85, dashArray: '12,4,3,4' })}
             />
           )}
 

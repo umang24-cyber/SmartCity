@@ -14,6 +14,7 @@ The POST /reports endpoint is the canonical submission path:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -23,6 +24,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 
 from services.nlp_service import analyze_report
+from ai.nlp.loader import _mock_analyze_report   # fast keyword path
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reports", tags=["Incident Reports"])
@@ -193,19 +195,13 @@ async def list_reports(
 
     return results[-limit:]  # newest last
 
-
 # ── POST /reports  (UNIFIED submit + analyze) ─────────────────────────────────
 
 @router.post(
     "/",
     response_model=EnrichedReportResponse,
     status_code=201,
-    summary="Submit + analyze an incident report (unified)",
-    description=(
-        "Primary submission endpoint. Runs full NLP pipeline on the text, "
-        "stores the enriched result, and returns the full analysis. "
-        "Supply lat/lng if available so the map can display the marker."
-    ),
+    summary="Submit + analyze an incident report (fast path)",
 )
 async def submit_and_analyze_report(
     body: ReportRequest,
@@ -217,31 +213,14 @@ async def submit_and_analyze_report(
             detail="Report text must not be blank.",
         )
 
-    # Auto-generate report_id if not supplied
     report_id = body.report_id or f"RPT_{uuid.uuid4().hex[:10].upper()}"
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp  = datetime.now(timezone.utc).isoformat()
 
-    logger.info(
-        "Unified report submit: id=%s chars=%d lat=%s lng=%s",
-        report_id, len(body.text), body.lat, body.lng,
-    )
+    # ── FAST PATH: instant keyword NLP (<5 ms) ────────────────────────────────
+    fast_result = _mock_analyze_report(body.text)
+    fast_result["loader_status"] = "fast_keyword"
 
-    # ── Run NLP ──────────────────────────────────────────────────
-    nlp_bundle = request.app.state.models.get("nlp")
-    if nlp_bundle is None:
-        raise HTTPException(status_code=503, detail="NLP model not loaded yet — retry in a few seconds.")
-
-    try:
-        nlp_result = analyze_report(body.text, bundle=nlp_bundle)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
-    except Exception as exc:
-        logger.error("NLP analysis failed: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"NLP analysis failed: {exc}")
-
-    # ── Assemble enriched report ──────────────────────────────────
     enriched: dict[str, Any] = {
-        # Submission metadata
         "report_id":     report_id,
         "timestamp":     timestamp,
         "text":          body.text,
@@ -249,19 +228,31 @@ async def submit_and_analyze_report(
         "lng":           body.lng,
         "incident_type": body.incident_type,
         "source":        body.source,
-        # Full NLP output
-        **nlp_result,
+        **fast_result,
     }
-
     _report_store.append(enriched)
 
-    logger.info(
-        "Report stored: id=%s emergency=%s severity=%.2f credibility=%d",
-        report_id,
-        nlp_result.get("emergency_level", "?"),
-        float(nlp_result.get("severity", 0)),
-        int(nlp_result.get("credibility_score", 0)),
-    )
+    # ── BACKGROUND: upgrade with full ML NLP asynchronously ──────────────────
+    nlp_bundle = getattr(getattr(request, "app", None), "state", None) and request.app.state.models.get("nlp")
+
+    async def _upgrade():
+        try:
+            ml_result = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: analyze_report(body.text, bundle=nlp_bundle)
+            )
+            # Patch stored record with full ML result
+            for rec in _report_store:
+                if rec.get("report_id") == report_id:
+                    rec.update(ml_result)
+                    rec["loader_status"] = ml_result.get("loader_status", "loaded")
+                    break
+        except Exception as exc:
+            logger.warning("ML upgrade failed for %s: %s", report_id, exc)
+
+    if nlp_bundle and nlp_bundle.get("status") == "loaded":
+        asyncio.create_task(_upgrade())
+
+    logger.info("Report fast-stored: id=%s level=%s", report_id, fast_result.get("emergency_level"))
 
     return EnrichedReportResponse(
         report_id=report_id,
@@ -270,29 +261,28 @@ async def submit_and_analyze_report(
         lng=body.lng,
         incident_type=body.incident_type,
         source=body.source,
-        # NLP fields
-        sentiment=nlp_result.get("sentiment", "neutral"),
-        sentiment_score=float(nlp_result.get("sentiment_score", 0.0)),
-        distress_level=nlp_result.get("distress_level", "LOW"),
-        emotion=nlp_result.get("emotion", "neutral"),
-        emotion_confidence=float(nlp_result.get("emotion_confidence", 0.0)),
-        emotion_all_scores=nlp_result.get("emotion_all_scores", {}),
-        emergency_level=nlp_result.get("emergency_level", "NORMAL"),
-        is_emergency=bool(nlp_result.get("is_emergency", False)),
-        matched_keywords=nlp_result.get("matched_keywords", []),
-        severity=float(nlp_result.get("severity", 1.0)),
-        credibility_score=int(nlp_result.get("credibility_score", 50)),
-        credibility_label=nlp_result.get("credibility_label", "SUSPICIOUS"),
-        credibility_flags=nlp_result.get("credibility_flags", []),
-        entities=nlp_result.get("entities", {}),
-        duplicate_score=float(nlp_result.get("duplicate_score", 0.0)),
-        is_duplicate=bool(nlp_result.get("is_duplicate", False)),
-        duplicate_matched_index=nlp_result.get("duplicate_matched_index"),
-        auto_response=nlp_result.get("auto_response", ""),
-        recommended_actions=nlp_result.get("recommended_actions", []),
-        word_count=int(nlp_result.get("word_count", 0)),
-        processing_ms=float(nlp_result.get("processing_ms", 0.0)),
-        loader_status=nlp_result.get("loader_status", "unknown"),
+        sentiment=fast_result.get("sentiment", "neutral"),
+        sentiment_score=float(fast_result.get("sentiment_score", 0.0)),
+        distress_level=fast_result.get("distress_level", "LOW"),
+        emotion=fast_result.get("emotion", "neutral"),
+        emotion_confidence=float(fast_result.get("emotion_confidence", 0.0)),
+        emotion_all_scores=fast_result.get("emotion_all_scores", {}),
+        emergency_level=fast_result.get("emergency_level", "NORMAL"),
+        is_emergency=bool(fast_result.get("is_emergency", False)),
+        matched_keywords=fast_result.get("matched_keywords", []),
+        severity=float(fast_result.get("severity", 1.0)),
+        credibility_score=int(fast_result.get("credibility_score", 50)),
+        credibility_label=fast_result.get("credibility_label", "REVIEWING"),
+        credibility_flags=fast_result.get("credibility_flags", []),
+        entities=fast_result.get("entities", {}),
+        duplicate_score=float(fast_result.get("duplicate_score", 0.0)),
+        is_duplicate=bool(fast_result.get("is_duplicate", False)),
+        duplicate_matched_index=fast_result.get("duplicate_matched_index"),
+        auto_response=fast_result.get("auto_response", "Report received."),
+        recommended_actions=fast_result.get("recommended_actions", []),
+        word_count=int(fast_result.get("word_count", 0)),
+        processing_ms=float(fast_result.get("processing_ms", 0.0)),
+        loader_status=fast_result["loader_status"],
     )
 
 

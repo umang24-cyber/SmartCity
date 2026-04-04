@@ -41,15 +41,18 @@ export default function Dashboard() {
   } = useTigerGraph();
 
   const [activeTab, setActiveTab] = React.useState('SONAR');
-  const [safestGeo, setSafestGeo]   = React.useState(null);
-  const [fastestGeo, setFastestGeo] = React.useState(null);
-  const [userPos, setUserPos]        = React.useState(null);
+  const [safestGeo, setSafestGeo]     = React.useState(null);
+  const [fastestGeo, setFastestGeo]   = React.useState(null);
+  const [balancedGeo, setBalancedGeo] = React.useState(null);
+  const [userPos, setUserPos]         = React.useState(null);
 
   const handleRouteComputed = React.useCallback((routeData, src) => {
     const sg = routeData?.safest_route?.route_geojson;
-    const fg = routeData?.shortest_route?.route_geojson;
-    if (sg) setSafestGeo({ type: 'Feature', properties: { color: '#00ff88' }, geometry: sg });
-    if (fg) setFastestGeo({ type: 'Feature', properties: { color: '#3b82f6' }, geometry: fg });
+    const fg = routeData?.fastest_route?.route_geojson || routeData?.shortest_route?.route_geojson;
+    const bg = routeData?.balanced_route?.route_geojson;
+    if (sg) setSafestGeo(sg);
+    if (fg) setFastestGeo(fg);
+    if (bg) setBalancedGeo(bg);
     if (src) setUserPos(src);
   }, []);
 
@@ -83,6 +86,7 @@ export default function Dashboard() {
                 safeRoute={safeRoute}
                 safestRouteGeoJSON={safestGeo}
                 shortestRouteGeoJSON={fastestGeo}
+                balancedRouteGeoJSON={balancedGeo}
                 selectedIntersection={selectedIntersection}
                 userPosition={userPos}
               />
@@ -174,6 +178,7 @@ export default function Dashboard() {
                 safeRoute={safeRoute}
                 safestRouteGeoJSON={safestGeo}
                 shortestRouteGeoJSON={fastestGeo}
+                balancedRouteGeoJSON={balancedGeo}
                 selectedIntersection={selectedIntersection}
                 userPosition={userPos}
               />
