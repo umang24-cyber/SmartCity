@@ -1,0 +1,179 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: var(--bg-base);
+  color: #fff;
+}
+
+.login-card {
+  background-color: var(--bg-panel);
+  padding: 2.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent-cyan);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.login-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  color: var(--accent-cyan);
+  margin: 0;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.login-subtitle {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0;
+  text-align: center;
+  letter-spacing: 4px;
+}
+
+.auth-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.auth-switch button {
+  background: transparent;
+  border: 1px solid #444;
+  color: #bbb;
+  padding: 0.55rem 0.5rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.auth-switch button.active {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.login-error {
+  background: rgba(255, 61, 90, 0.1);
+  color: var(--danger);
+  padding: 0.75rem;
+  border: 1px solid var(--danger);
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.input-group label {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--accent-cyan);
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--bg-base);
+  border: 1px solid #333;
+  color: #fff;
+  font-family: 'DM Mono', monospace;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  border-color: var(--accent-cyan);
+}
+
+.login-btn {
+  background-color: var(--accent-cyan);
+  color: #000;
+  border: none;
+  padding: 1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 1px;
+}
+
+.login-btn:hover {
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+}
+
+.login-btn:disabled {
+  background-color: #555;
+  color: #999;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.login-footer-link {
+  text-align: center;
+}
+
+.login-footer-link button {
+  background: transparent;
+  border: none;
+  color: var(--accent-cyan);
+  font-family: 'DM Mono', monospace;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.demo-accounts {
+  margin-top: 1rem;
+  border-top: 1px solid #333;
+  padding-top: 1rem;
+  text-align: center;
+}
+
+.demo-accounts p {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.demo-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.demo-buttons button {
+  background: transparent;
+  border: 1px solid #555;
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.demo-buttons button:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}

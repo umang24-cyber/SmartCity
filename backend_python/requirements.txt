@@ -1,0 +1,38 @@
+# ─── Core FastAPI Stack ──────────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-dotenv==1.0.1
+pydantic==2.10.4
+
+# ─── Authentication (RBAC) ──────────────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
+
+# ─── HTTP Client ────────────────────────────────────────────────────────────
+httpx==0.28.1
+
+# ─── TigerGraph connector ─────────────────────────────────────────────────────
+pyTigerGraph==1.6.1
+
+# ─── AI / ML (heavy — install only the models your team is running) ──────────
+# Uncomment the ones you need:
+#
+# LSTM model (TensorFlow / Keras):
+# tensorflow==2.16.1
+#
+# CV model (PyTorch + YOLOv8):
+# torch==2.2.2
+# torchvision==0.17.2
+# ultralytics==8.2.0           # YOLOv8 — auto-downloads yolov8n.pt on first run
+# Pillow==10.3.0
+#
+# NLP + Anomaly (transformer-based):
+# transformers==4.40.0
+# scikit-learn==1.4.2
+# numpy==1.26.4
+# scipy==1.13.0
+
+# ─── Minimal always-on ML deps (used by mock fallbacks) ─────────────────────
+numpy
+scikit-learn
