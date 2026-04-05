@@ -8,10 +8,10 @@ For production: replace with DBSCAN via scikit-learn.
 import math
 import logging
 from typing import List, Dict, Any
-from custom_db.tigergraph_client import get_zone_data
-from custom_db.mock_db import MOCK_ZONES
+from custom_db.tigergraph_client import get_all_zones
 
 logger = logging.getLogger(__name__)
+
 
 SEVERITY_RANK = {"critical": 4, "high": 3, "medium": 2, "low": 1}
 
@@ -30,7 +30,7 @@ async def compute_clusters(
       coords = np.array([(z['lat'], z['lng']) for z in zones])
       labels = DBSCAN(eps=radius_km/111, min_samples=min_size).fit_predict(coords)
     """
-    zones = list(MOCK_ZONES.values())
+    zones = await get_all_zones(limit=10000)
 
     # Simple grid-cell clustering
     cell_size = radius_km / 111.0  # degrees per km

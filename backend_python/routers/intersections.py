@@ -1,7 +1,19 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
+import math
 
 router = APIRouter(prefix="/intersections", tags=["Intersections"])
+
+
+def _dist(p1, p2):
+    R = 6371
+    dlat = math.radians(p2[0] - p1[0])
+    dlon = math.radians(p2[1] - p1[1])
+    a = (math.sin(dlat / 2) ** 2 +
+         math.cos(math.radians(p1[0])) * math.cos(math.radians(p2[0])) *
+         math.sin(dlon / 2) ** 2)
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
 
 @router.get("/")
 async def get_intersections(
@@ -12,32 +24,28 @@ async def get_intersections(
 ):
     """
     Returns intersections with danger scores for map overlay.
-    Each intersection includes lat/lng and a danger_score for heatmap/marker rendering.
+    Pulls live data from TigerGraph (Intersection vertex type).
     """
-    from custom_db.tigergraph_client import get_client
-    from custom_db.mock_db import get_heatmap_data # using heatmap data as intersections for now
+    from services.graph_service import get_heatmap_data
 
     try:
-        # Instead of get_mock_intersections which isn't defined in the prompt's db.mock_db,
-        # we'll use the heatmap data which returns all zones/intersections
-        intersections = get_heatmap_data()
-        
-        # Simple local filtering if lat/lng is provided
+        intersections = await get_heatmap_data()
+
+        # Add intersection_name fallback
+        for i in intersections:
+            i.setdefault("intersection_name", i.get("zone_id", ""))
+            # Map baseline_safety_score → danger_score if missing
+            if "danger_score" not in i or i["danger_score"] == 0.0:
+                bss = float(i.get("baseline_safety_score", 0.7))
+                i["danger_score"] = round(1.0 - bss, 3)
+
+        # Radius filter
         if lat is not None and lng is not None:
-             import math
-             def _dist(p1, p2):
-                 R = 6371
-                 dlat = math.radians(p2[0] - p1[0])
-                 dlon = math.radians(p2[1] - p1[1])
-                 a = (math.sin(dlat / 2) * math.sin(dlat / 2) + 
-                      math.cos(math.radians(p1[0])) * math.cos(math.radians(p2[0])) * 
-                      math.sin(dlon / 2) * math.sin(dlon / 2))
-                 c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-                 return R * c
-                 
-             intersections = [i for i in intersections if _dist((lat, lng), (i["lat"], i["lng"])) <= radius_km]
-             
-        # Sort by danger and limit
+            intersections = [
+                i for i in intersections
+                if _dist((lat, lng), (i["lat"], i["lng"])) <= radius_km
+            ]
+
         intersections = sorted(intersections, key=lambda x: x["danger_score"], reverse=True)[:limit]
 
         return {

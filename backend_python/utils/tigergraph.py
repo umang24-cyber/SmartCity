@@ -1,10 +1,8 @@
 """
 TIGERGRAPH ADAPTER
 ALL TigerGraph API calls live in this one file.
-When Group A shares credentials, fill in .env and flip
-DATA_SOURCE=tigergraph. Nothing else changes.
 """
-import os
+import socket
 import httpx
 from typing import Any, Dict, List, Optional
 import logging
@@ -12,6 +10,31 @@ import logging
 from config import TIGERGRAPH_HOST, TIGERGRAPH_GRAPH, TIGERGRAPH_TOKEN
 
 logger = logging.getLogger(__name__)
+
+# ── DNS bypass for restricted networks (college Wi-Fi) ─────────────────────────
+# Pre-resolved IPs for the TigerGraph Cloud instance.
+_TG_HOSTNAME = (
+    TIGERGRAPH_HOST
+    .replace("https://", "")
+    .replace("http://", "")
+    .split("/")[0]
+)
+_TG_IPS = ["3.109.145.130", "13.126.119.236", "13.126.226.150"]
+
+_orig_getaddrinfo = socket.getaddrinfo
+
+
+def _patched_getaddrinfo(host, port, *args, **kwargs):
+    if host == _TG_HOSTNAME:
+        # rotate through available IPs
+        ip = _TG_IPS[0]
+        logger.debug("DNS patch: %s → %s", host, ip)
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (ip, port or 443))]
+    return _orig_getaddrinfo(host, port, *args, **kwargs)
+
+
+socket.getaddrinfo = _patched_getaddrinfo
+# ──────────────────────────────────────────────────────────────────────────────
 
 # Construct the REST++ base URL from the managed cloud host 
 # (Managed TG instances use /restpp as the endpoint prefix)
@@ -94,7 +117,8 @@ async def get_cluster(cluster_id: int) -> Dict:
 
 # ── GET all Incidents ─────────────────────────────────────────────
 async def get_all_incidents(verified_only: bool = False) -> List[Dict]:
-    data = await _get(f"/graph/{TIGERGRAPH_GRAPH}/vertices/IncidentReport")
+    # Vertex type in loaded schema is 'Incident' (not 'IncidentReport')
+    data = await _get(f"/graph/{TIGERGRAPH_GRAPH}/vertices/Incident")
     incidents = []
     for item in data["results"]:
         attrs = item["attributes"]
