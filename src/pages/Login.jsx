@@ -103,6 +103,13 @@ export default function Login() {
         </form>
 
         <div className="login-footer-link">
+          <p>Don't have an account?</p>
+          <button type="button" onClick={() => navigate('/signup')}>
+            Register as New {mode === 'supervisor' ? 'Admin' : 'Police'}
+          </button>
+        </div>
+
+        <div className="login-footer-link" style={{ marginTop: '0.5rem' }}>
           <button type="button" onClick={() => navigate('/')}>
             ← Return to Portal
           </button>

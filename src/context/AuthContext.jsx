@@ -2,8 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   loginUser as apiLoginUser,
   loginSupervisor as apiLoginSupervisor,
+  loginOfficer as apiLoginOfficer,
   signupUser as apiSignupUser,
   signupSupervisor as apiSignupSupervisor,
+  signupOfficer as apiSignupOfficer,
   signupUserWithGoogle as apiSignupUserWithGoogle,
   getMe as apiGetMe
 } from '../api/smartcity';
@@ -40,9 +42,14 @@ export function AuthProvider({ children }) {
 
   const login = async ({ role, email, password, accessKey }) => {
     try {
-      const data = role === 'supervisor'
-        ? await apiLoginSupervisor(email, accessKey)
-        : await apiLoginUser(email, password);
+      let data;
+      if (role === 'supervisor') {
+        data = await apiLoginSupervisor(email, accessKey);
+      } else if (role === 'officer') {
+        data = await apiLoginOfficer(email, password);
+      } else {
+        data = await apiLoginUser(email, password);
+      }
       
       const tokenToSet = data.access_token || data.token;
       if (!tokenToSet) throw new Error('No token returned from login');
@@ -62,6 +69,8 @@ export function AuthProvider({ children }) {
       let data;
       if (role === 'supervisor') {
         data = await apiSignupSupervisor(name, email, password, accessKey);
+      } else if (role === 'officer') {
+        data = await apiSignupOfficer(name, email, password);
       } else {
         data = method === 'google'
           ? await apiSignupUserWithGoogle(name, email)

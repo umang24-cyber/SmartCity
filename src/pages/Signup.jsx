@@ -8,7 +8,7 @@ export default function Signup() {
   const { signup, loading } = useAuth();
   
   // States
-  const [role, setRole] = useState('user'); // 'user' or 'supervisor'
+  const [role, setRole] = useState('user'); // 'user', 'supervisor', or 'officer'
   const [method, setMethod] = useState('password');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -58,6 +58,8 @@ export default function Signup() {
       // Redirect based on role
       if (role === 'supervisor') {
         navigate('/supervisor');
+      } else if (role === 'officer') {
+        navigate('/officer');
       } else {
         navigate('/user-dashboard');
       }
@@ -80,6 +82,9 @@ export default function Signup() {
           </button>
           <button type="button" className={role === 'supervisor' ? 'active' : ''} onClick={() => { setRole('supervisor'); setMethod('password'); }}>
              OPERATOR/SUPERVISOR
+          </button>
+          <button type="button" className={role === 'officer' ? 'active' : ''} onClick={() => { setRole('officer'); setMethod('password'); }}>
+             OFFICER/POLICE
           </button>
         </div>
 
@@ -104,8 +109,8 @@ export default function Signup() {
 
           <div className="input-group">
             <label>IDENTIFIER (EMAIL)</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder={role === 'supervisor' ? "user@smartcity.gov" : "Enter Email"} />
-            {role === 'supervisor' && <p className="text-[10px] text-gray-500 mt-1">Must be an official government domain.</p>}
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder={role === 'supervisor' || role === 'officer' ? "user@smartcity.gov" : "Enter Email"} />
+            {(role === 'supervisor' || role === 'officer') && <p className="text-[10px] text-gray-500 mt-1">Must be an official government domain.</p>}
           </div>
 
           {method === 'password' && (

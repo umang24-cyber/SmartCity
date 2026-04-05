@@ -44,6 +44,15 @@ class SupervisorSignupRequest(BaseModel):
     password: str
     access_key: str
 
+class OfficerSignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class OfficerLoginRequest(BaseModel):
+    email: str
+    password: str
+
 
 def _build_auth_response(user_dict: dict):
     access_token = create_access_token(data={"sub": user_dict["email"]})
@@ -106,6 +115,21 @@ async def signup_supervisor(request: SupervisorSignupRequest):
     return _build_auth_response(created)
 
 
+@router.post("/signup/officer", response_model=LoginResponse)
+async def signup_officer(request: OfficerSignupRequest):
+    # For now, officer signup is open like user signup, but we can add restrictions later.
+    created = create_user(
+        name=request.name,
+        email=request.email,
+        role="officer",
+        password=request.password,
+        auth_provider="password",
+    )
+    if not created:
+        raise HTTPException(status_code=400, detail="Unable to create officer account. Email may already exist.")
+    return _build_auth_response(created)
+
+
 @router.post("/login/user", response_model=LoginResponse)
 async def login_user(request: UserLoginRequest):
     user_dict = get_user(request.email)
@@ -131,6 +155,21 @@ async def login_supervisor(request: SupervisorLoginRequest):
         raise HTTPException(status_code=400, detail="Supervisor account not found.")
     if not validate_supervisor_access_key(request.access_key):
         raise HTTPException(status_code=403, detail="Invalid supervisor access key.")
+    return _build_auth_response(user_dict)
+
+
+@router.post("/login/officer", response_model=LoginResponse)
+async def login_officer(request: OfficerLoginRequest):
+    user_dict = get_user(request.email)
+    if not user_dict or user_dict["role"] != "officer":
+        raise HTTPException(status_code=400, detail="Officer account not found.")
+
+    if not request.password or not user_dict.get("hashed_password"):
+        raise HTTPException(status_code=400, detail="Password is required.")
+
+    if not pwd_context.verify(request.password, user_dict["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Invalid Credentials")
+
     return _build_auth_response(user_dict)
 
 

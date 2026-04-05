@@ -159,11 +159,17 @@ export const loginUser = async (email, password) =>
 export const loginSupervisor = async (email, accessKey) =>
   apiPost('/auth/login/supervisor', { email, access_key: accessKey });
 
+export const loginOfficer = async (email, password) =>
+  apiPost('/auth/login/officer', { email, password });
+
 export const signupUser = async (name, email, password) =>
   apiPost('/auth/signup/user', { name, email, password });
 
 export const signupSupervisor = async (name, email, password, accessKey) =>
   apiPost('/auth/signup/supervisor', { name, email, password, access_key: accessKey });
+
+export const signupOfficer = async (name, email, password) =>
+  apiPost('/auth/signup/officer', { name, email, password });
 
 export const signupUserWithGoogle = async (name, email) =>
   apiPost('/auth/signup/google', { name, email });
