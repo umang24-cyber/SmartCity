@@ -39,9 +39,31 @@
             "hashed_password": "$2b$12$O7OWINR.PK6THgXNvRsMneAIpn4vqk/CR1cHuBFwZwZ573vnN.et2",
             "role": "supervisor",
             "auth_provider": "password"
+        },
+        "police@gov.in": {
+            "id": "u_abdcb22c",
+            "name": "police",
+            "email": "police@gov.in",
+            "hashed_password": "$2b$12$utR/gh74yyyoW6.zpK.BueInTv6sRbx8NGh7koQxJs5eXgxO/NV5O",
+            "role": "user",
+            "auth_provider": "password"
         }
     },
     "incidents": [
+        {
+            "incident_id": "SOS_E915DC4A",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-04-06T15:42:11.596097+00:00",
+            "source": "sos_alert",
+            "lat": 30.709952141323594,
+            "lng": 76.75181536834934,
+            "location_id": "30.7100_76.7518",
+            "verified": true
+        },
         {
             "incident_id": "SOS_BA976852",
             "text": "EMERGENCY SOS via Public Portal",
