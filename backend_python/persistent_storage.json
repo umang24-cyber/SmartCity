@@ -31,9 +31,31 @@
             "hashed_password": "$2b$12$MYHLH.9RTbNJqrwk9icDYuXWAJvbLHEJ7DeRWiRiXuUEMf.wymJMq",
             "role": "user",
             "auth_provider": "password"
+        },
+        "admin@smartcity.gov": {
+            "id": "u_c9d8d07d",
+            "name": "admin",
+            "email": "admin@smartcity.gov",
+            "hashed_password": "$2b$12$O7OWINR.PK6THgXNvRsMneAIpn4vqk/CR1cHuBFwZwZ573vnN.et2",
+            "role": "supervisor",
+            "auth_provider": "password"
         }
     },
     "incidents": [
+        {
+            "incident_id": "SOS_BA976852",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-04-06T13:40:35.925212+00:00",
+            "source": "sos_alert",
+            "lat": 30.7529928,
+            "lng": 76.772654,
+            "location_id": "30.7530_76.7727",
+            "verified": true
+        },
         {
             "incident_id": "SOS_A76821B3",
             "text": "EMERGENCY SOS via Public Portal",

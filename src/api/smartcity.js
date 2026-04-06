@@ -223,6 +223,26 @@ export const fetchReports = async ({ minSeverity, emergencyLevel, limit = 200 } 
   return apiFetch(qs ? `/reports?${qs}` : '/reports');
 };
 
+/**
+ * fetchSupervisorReports — fetch user-submitted enriched reports for the supervisor panel.
+ * Returns array of EnrichedReportResponse objects from /reports, newest first.
+ * Falls back to empty array if backend offline.
+ */
+export const fetchSupervisorReports = async (token = null) => {
+  try {
+    const data = await apiFetch('/reports?limit=200', token);
+    if (!Array.isArray(data)) return [];
+    // Sort newest first
+    return [...data].sort((a, b) => {
+      const ta = new Date(a.timestamp || 0).getTime();
+      const tb = new Date(b.timestamp || 0).getTime();
+      return tb - ta;
+    });
+  } catch {
+    return [];
+  }
+};
+
 
 // Route Operations
 
