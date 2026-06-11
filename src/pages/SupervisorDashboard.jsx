@@ -6,6 +6,7 @@ import { getOverview, getSupervisorTrends, getInfrastructureStatus, fetchSupervi
 import { useTigerGraph } from '../hooks/useTigerGraph';
 import ModeSlider from '../components/ModeSlider';
 import OrayaLogo from '../components/OrayaLogo';
+import ExplainablePanel from '../components/ExplainablePanel';
 
 /* ── Sparkline ──────────────────────────────────────────────── */
 function Sparkline({ data = [], color = 'var(--accent)', height = 40, width = 160 }) {
@@ -145,7 +146,7 @@ function FloatingWindow({
 }
 
 /* ── NLP Analysis Card (full view for a submitted report) ──── */
-function ReportCard({ report, onRefresh }) {
+function ReportCard({ report, onRefresh, selected, onSelect }) {
   const [expanded, setExpanded] = useState(false);
   const lvl = (report.emergency_level || 'NORMAL').toUpperCase();
   const col = emColor(lvl);
@@ -161,18 +162,34 @@ function ReportCard({ report, onRefresh }) {
 
   return (
     <div
-      onClick={() => setExpanded(v => !v)}
+      onClick={() => {
+        setExpanded(v => !v);
+        onSelect?.();
+      }}
       style={{
-        border: `1px solid ${col}28`,
-        borderLeft: `2.5px solid ${col}`,
+        border: selected ? `1.5px solid ${col}` : `1px solid ${col}28`,
+        borderLeft: `3px solid ${col}`,
         borderRadius: 5,
-        background: `linear-gradient(135deg, ${col}06 0%, rgba(5,12,22,0.55) 100%)`,
+        background: selected 
+          ? `linear-gradient(135deg, ${col}18 0%, rgba(10,20,35,0.7) 100%)`
+          : `linear-gradient(135deg, ${col}06 0%, rgba(5,12,22,0.55) 100%)`,
+        boxShadow: selected ? `0 0 12px ${col}30` : 'none',
         transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)',
         cursor: 'pointer',
         overflow: 'hidden',
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = `linear-gradient(135deg, ${col}12 0%, rgba(5,12,22,0.8) 100%)`; e.currentTarget.style.borderColor = `${col}55`; }}
-      onMouseLeave={e => { e.currentTarget.style.background = `linear-gradient(135deg, ${col}06 0%, rgba(5,12,22,0.55) 100%)`; e.currentTarget.style.borderColor = `${col}28`; }}
+      onMouseEnter={e => { 
+        if (!selected) {
+          e.currentTarget.style.background = `linear-gradient(135deg, ${col}12 0%, rgba(5,12,22,0.8) 100%)`; 
+          e.currentTarget.style.borderColor = `${col}55`; 
+        }
+      }}
+      onMouseLeave={e => { 
+        if (!selected) {
+          e.currentTarget.style.background = `linear-gradient(135deg, ${col}06 0%, rgba(5,12,22,0.55) 100%)`; 
+          e.currentTarget.style.borderColor = `${col}28`; 
+        }
+      }}
     >
       {/* Compact header */}
       <div style={{ padding: '0.6rem 0.7rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -372,14 +389,15 @@ function StatPill({ label, value, color, glow, pulse }) {
 export default function SupervisorDashboard() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
-  const { intersections, safeRoute, selectedIntersection } = useTigerGraph();
+  const { intersections, safeRoute, selectedIntersection, setSelectedIntersection, danger } = useTigerGraph();
 
   const [reports, setReports] = useState([]);       // from /reports → enriched NLP reports
+  const [selectedReport, setSelectedReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [trends, setTrends] = useState(null);
   const [infraStatus, setInfraStatus] = useState([]);
-  const [windowZIndexes, setWindowZIndexes] = useState({ reports: 200, infra: 200, trends: 200, stats: 200 });
+  const [windowZIndexes, setWindowZIndexes] = useState({ reports: 200, infra: 200, trends: 200, stats: 200, telemetry: 200 });
   const zCounter = useRef(200);
   const refreshTimerRef = useRef(null);
 
@@ -420,13 +438,24 @@ export default function SupervisorDashboard() {
   // Critical / high count from reports
   const criticalCount = reports.filter(r => ['CRITICAL', 'HIGH'].includes((r.emergency_level || '').toUpperCase())).length;
 
+  const selectedNode = intersections.find(
+    n => n.intersection_id === selectedIntersection || n.zone_id === selectedIntersection
+  );
+  const selectedIntersectionName = selectedNode ? selectedNode.intersection_name : selectedIntersection;
+
   return (
     <div className="rbac-layout" style={{ fontFamily: 'var(--font-mono)' }}>
       <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,170,0,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
       {/* Map */}
       <div className="map-container">
-        <Explorer intersections={intersections} incidents={reports.map(r => ({ ...r, incident_id: r.report_id, incident_type: r.incident_type, lat: r.lat, lng: r.lng, severity: r.severity, verified: false, source: r.source }))} safeRoute={safeRoute} selectedIntersection={selectedIntersection} />
+        <Explorer 
+          intersections={intersections} 
+          incidents={reports.map(r => ({ ...r, incident_id: r.report_id, incident_type: r.incident_type, lat: r.lat, lng: r.lng, severity: r.severity, verified: false, source: r.source }))} 
+          safeRoute={safeRoute} 
+          selectedIntersection={selectedIntersection} 
+          onSelectIntersection={setSelectedIntersection}
+        />
       </div>
 
       {/* Header */}
@@ -489,7 +518,12 @@ export default function SupervisorDashboard() {
             </div>
           ) : (
             reports.map(report => (
-              <ReportCard key={report.report_id} report={report} />
+              <ReportCard 
+                key={report.report_id} 
+                report={report} 
+                selected={selectedReport?.report_id === report.report_id}
+                onSelect={() => setSelectedReport(report)}
+              />
             ))
           )}
         </div>
@@ -597,6 +631,28 @@ export default function SupervisorDashboard() {
           </div>
         </FloatingWindow>
       )}
+
+      {/* ── Floating Window: AI Telemetry & Explainability Hub ── */}
+      <FloatingWindow
+        id="telemetry"
+        title="AI EXPLAINABILITY & TELEMETRY HUB"
+        subtitle="Real-time XAI metrics & What-If simulator"
+        badge={selectedReport ? "ACTIVE NLP" : selectedIntersection ? "ACTIVE SENSOR" : "AWAITING SELECTION"}
+        badgeColor={selectedReport ? "#a855f7" : "var(--accent)"}
+        accentColor="#a855f7"
+        icon="⚙"
+        defaultPos={{ x: 20, y: 150 }}
+        zIndex={windowZIndexes.telemetry}
+        onFocus={focusWindow}
+        collapsed={false}
+      >
+        <ExplainablePanel 
+          selectedReport={selectedReport} 
+          dangerTelemetry={danger} 
+          selectedIntersectionName={selectedIntersectionName} 
+          token={token} 
+        />
+      </FloatingWindow>
 
       <style>{`
         @keyframes statPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; text-shadow: 0 0 12px currentColor; } }

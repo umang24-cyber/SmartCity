@@ -67,6 +67,7 @@ export default function Explorer({
   balancedRouteGeoJSON = null,
   safeZones = [],
   selectedIntersection = null,
+  onSelectIntersection = null,
   userPosition = null,
   backendUrl = 'http://127.0.0.1:8000',
 }) {
@@ -280,6 +281,13 @@ export default function Explorer({
                 center={[node.lat, node.lng]}
                 radius={5}
                 pathOptions={{ fillColor: col, fillOpacity: 0.75, color: '#fff', weight: 1 }}
+                eventHandlers={{
+                  click: () => {
+                    if (onSelectIntersection) {
+                      onSelectIntersection(node.intersection_id || node.zone_id);
+                    }
+                  }
+                }}
               >
                 <Popup>
                   <div style={{ fontFamily: 'monospace', background: 'rgba(10,15,25,.95)', color: '#e2e8f0', padding: '6px 8px', fontSize: '0.7rem' }}>
