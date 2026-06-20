@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   AlertCircle, Cpu, ShieldAlert, Sparkles, Activity, 
-  HelpCircle, RefreshCw, Layers, CheckCircle2, AlertTriangle
+  HelpCircle, RefreshCw, Layers, CheckCircle2, AlertTriangle, BookOpen
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell 
