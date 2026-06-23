@@ -30,6 +30,7 @@ export default function PublicCitizenPortal() {
   // Report form state
   const [reportText, setReportText] = useState('');
   const [reportType, setReportType] = useState('suspicious_activity');
+  const [reportLocation, setReportLocation]=useState(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportResult, setReportResult] = useState(null);
   const [reportError, setReportError] = useState(null);
@@ -67,7 +68,15 @@ export default function PublicCitizenPortal() {
     setReportResult(null);
     try {
       let lat = 30.7333, lng = 76.7794; // Chandigarh fallback
-      if (userPos) { lat = userPos.lat; lng = userPos.lng; }
+       //if (userPos) { lat = userPos.lat; lng = userPos.lng; }
+      if (reportLocation) {
+        lat = reportLocation.lat;
+        lng = reportLocation.lng; 
+      }
+      else if(userPos){
+        lat=userPos.lat;
+        lng=userPos.lng;
+      }
       const res = await submitAndAnalyzeReport({
         text: reportText,
         incident_type: reportType,
@@ -76,6 +85,7 @@ export default function PublicCitizenPortal() {
       });
       setReportResult(res);
       setReportText('');
+      setReportLocation(null);
     } catch (e) {
       setReportError(e.message || 'Submission failed');
     } finally {
@@ -126,8 +136,9 @@ export default function PublicCitizenPortal() {
 
         {/* Left panel */}
 <div style={{
-  width: '100%',
-  maxWidth: '100%',
+  width: window.innerWidth <= 768 ? '100%' : '420px',
+  //width: '100%',
+  //maxWidth: '100%',
   flexShrink: 0,
   display: 'flex',
   flexDirection: 'column',
@@ -228,6 +239,13 @@ export default function PublicCitizenPortal() {
             {tab === 'report' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontFamily: 'var(--font-mono)' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.72rem', color: 'var(--accent)', letterSpacing: '0.2em', marginBottom: '0.25rem' }}>SUBMIT INCIDENT REPORT</div>
+                 <div style={{
+                     fontSize: '0.65rem',
+                     color: 'var(--text-secondary)',
+                     marginBottom: '8px'
+                      }}>
+                 📍 Click anywhere on the map to select the incident location.
+                </div>
 
                 <div>
                   <div style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginBottom: '4px' }}>INCIDENT TYPE</div>
@@ -300,6 +318,8 @@ export default function PublicCitizenPortal() {
             safeZones={safeZones}
             selectedIntersection={selectedIntersection}
             userPosition={userPos}
+            reportLocation={reportLocation}                 
+            onReportLocationSelect={setReportLocation}
           />
         </div>
       </div>
