@@ -227,7 +227,7 @@ export default function ReportForm() {
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', flex: 1 }}>
-        {/* Coordinates */}
+       {/* Coordinates */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
           <div>
             <div className="label-xs" style={{ marginBottom: 3 }}>LATITUDE</div>
@@ -246,6 +246,7 @@ export default function ReportForm() {
             />
           </div>
         </div>
+        
         {/* Type */}
         <div>
           <div className="label-xs" style={{ marginBottom: 3 }}>INCIDENT TYPE</div>
