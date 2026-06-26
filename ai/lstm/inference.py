@@ -250,12 +250,17 @@ def predict(input_data: dict) -> dict:
 
     # ── Ensure model is loaded ────────────────────────────────────────────────
     if iid not in _models or iid not in _scalers:
-        raise RuntimeError(
-            f"Model for '{iid}' is not loaded. "
-            f"Call load_model_and_scaler('{iid}') at startup."
-        )
+        fallback_iid = "INT007"
 
-    model  = _models[iid]
+        if fallback_iid not in _models or fallback_iid not in _scalers:
+            raise RuntimeError(
+                f"Model for '{iid}' is not loaded and fallback model "
+                f"'{fallback_iid}' is unavailable."
+            )
+
+        iid = fallback_iid
+
+    model = _models[iid]
     scaler = _scalers[iid]
     n_feat = scaler.n_features_in_
 
