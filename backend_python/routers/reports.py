@@ -20,18 +20,19 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 
 from services.nlp_service import analyze_report
 from ai.nlp.loader import _mock_analyze_report   # fast keyword path
+from custom_db.persistence import load_all_data, save_data
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/reports", tags=["Incident Reports"])
 
 # ── In-memory incident store ──────────────────────────────────────────────────
 # Each entry is a fully enriched report (NLP output + submission metadata).
-_report_store: List[dict] = []
+_report_store: List[dict] = load_all_data().get("reports", [])
 
 
 # ── Pydantic Models ───────────────────────────────────────────────────────────
@@ -231,6 +232,7 @@ async def submit_and_analyze_report(
         **fast_result,
     }
     _report_store.append(enriched)
+    save_data("reports", _report_store)
 
     # ── BACKGROUND: upgrade with full ML NLP asynchronously ──────────────────
     nlp_bundle = getattr(getattr(request, "app", None), "state", None) and request.app.state.models.get("nlp")
@@ -245,6 +247,7 @@ async def submit_and_analyze_report(
                 if rec.get("report_id") == report_id:
                     rec.update(ml_result)
                     rec["loader_status"] = ml_result.get("loader_status", "loaded")
+                    save_data("reports", _report_store)
                     break
         except Exception as exc:
             logger.warning("ML upgrade failed for %s: %s", report_id, exc)
