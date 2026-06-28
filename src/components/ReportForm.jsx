@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { submitAndAnalyzeReport } from '../api/smartcity';
 
 const VALID_TYPES = [
@@ -21,12 +21,29 @@ export default function ReportForm() {
   const [incidentId, setIncidentId] = useState('');
   const [nlpData, setNlpData] = useState(null);
 
+  // Refs to keep track of the active timeouts across re-renders
+  const successTimeoutRef = useRef(null);
+  const errorTimeoutRef = useRef(null);
+
+  // Cleanup active timeouts when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+    };
+  }, []);
+
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('loading');
     setErrorMsg('');
+
+    // Clear any pending timers if a new submission happens
+    if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+    if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+
     try {
       const res = await submitAndAnalyzeReport({
         text: form.description || `${form.incident_type} incident reported at [${form.lat}, ${form.lng}]`,
@@ -40,7 +57,8 @@ export default function ReportForm() {
       setNlpData(res);
       setStatus('success');
 
-      setTimeout(() => {
+      // Store the success timeout ID in the ref
+      successTimeoutRef.current = setTimeout(() => {
         setStatus(null);
         setForm({ lat: '', lng: '', incident_type: 'poor_lighting', severity: 3, description: '' });
         setIncidentId('');
@@ -49,7 +67,11 @@ export default function ReportForm() {
     } catch (err) {
       setErrorMsg(typeof err === 'object' && err !== null && err.message ? err.message : 'DISPATCH FAILED');
       setStatus('error');
-      setTimeout(() => setStatus(null), 4000);
+      
+      // Store the error timeout ID in the ref
+      errorTimeoutRef.current = setTimeout(() => {
+        setStatus(null);
+      }, 4000);
     }
   };
 
@@ -205,24 +227,26 @@ export default function ReportForm() {
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', flex: 1 }}>
-        {/* Coordinates */}
+       {/* Coordinates */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
           <div>
             <div className="label-xs" style={{ marginBottom: 3 }}>LATITUDE</div>
-            <input type="number" step="any" required placeholder="12.9716"
+            <input type="number" step="any" placeholder="12.9716"
+              min="-90" max="90"
               value={form.lat} onChange={e => set('lat', e.target.value)}
               className="sub-input"
             />
           </div>
           <div>
             <div className="label-xs" style={{ marginBottom: 3 }}>LONGITUDE</div>
-            <input type="number" step="any" required placeholder="77.5946"
+            <input type="number" step="any" placeholder="77.5946"
+              min="-180" max="180"
               value={form.lng} onChange={e => set('lng', e.target.value)}
               className="sub-input"
             />
           </div>
         </div>
-
+        
         {/* Type */}
         <div>
           <div className="label-xs" style={{ marginBottom: 3 }}>INCIDENT TYPE</div>
