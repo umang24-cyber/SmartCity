@@ -83,6 +83,7 @@ export default function Explorer({
   userPosition = null,
   reportLocation = null,       
   onReportLocationSelect = null,
+  enableLocationSelect=false,
   backendUrl = 'http://127.0.0.1:8000',
 }) {
   const { mode } = useTheme();
@@ -198,8 +199,10 @@ export default function Explorer({
             url={mode === 'dark' ? TILE_DARK : TILE_LIGHT}
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          
-          <ReportLocationSelector onSelect={onReportLocationSelect}/>
+          {enableLocationSelect && (
+          <ReportLocationSelector
+           onSelect={onReportLocationSelect}/>
+          )}
           {selectedPos && <MapUpdater center={selectedPos} zoom={16} />}
           {userPosition && <MapFlyTo coords={[userPosition.lat, userPosition.lng]} />}
 

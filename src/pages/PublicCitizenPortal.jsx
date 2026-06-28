@@ -349,6 +349,7 @@ export default function PublicCitizenPortal() {
             userPosition={userPos}
             reportLocation={reportLocation}                 
             onReportLocationSelect={setReportLocation}
+            enableLocationSelect={tab=='report'}
           />
         </div>
       </div>
