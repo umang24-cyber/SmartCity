@@ -286,19 +286,6 @@ All settings live in `backend_python/config.py`. Key variables:
 Full interactive docs: `http://localhost:8000/docs`
 
 ---
-
-## 🧩 Tech Stack
-
-| Layer | Technologies |
-|---|---|
-| **Frontend** | React 19, Vite 8, Leaflet/React-Leaflet, Recharts, TailwindCSS |
-| **Backend** | FastAPI 0.115, Uvicorn, Pydantic v2, python-jose (JWT) |
-| **Graph DB** | TigerGraph Cloud — `UrbanSafetyGraph`, pyTigerGraph 1.6 |
-| **AI — LSTM** | TensorFlow / Keras, scikit-learn (scaler), NumPy |
-| **AI — CV** | PyTorch, MobileNetV2, Ultralytics YOLOv8, Pillow |
-| **AI — NLP** | HuggingFace Transformers, scikit-learn, SciPy |
-| **Maps** | OpenStreetMap tiles via Leaflet |
-
 ## 🧩 Tech Stack
 
 | Layer | Technologies |
