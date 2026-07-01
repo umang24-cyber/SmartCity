@@ -104,6 +104,8 @@ async def lifespan(app: FastAPI):
 
     yield  # Application serves requests here
 
+    from services.portal_service import _osrm_client
+    await _osrm_client.aclose()
     task.cancel()
     app.state.models.clear()
 
@@ -209,3 +211,4 @@ async def root():
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
