@@ -312,6 +312,69 @@ export const verifyIncident = async (id, verified, note, token) => {
   });
 };
 
+/**
+ * exportReports — download incident reports as CSV or PDF.
+ *
+ * Triggers a browser file download. Requires supervisor token.
+ *
+ * @param {Object}  opts
+ * @param {string}  opts.token          - JWT bearer token (supervisor)
+ * @param {string}  [opts.format]       - 'csv' (default) or 'pdf'
+ * @param {string}  [opts.fromDate]     - ISO date string (e.g. '2026-01-01')
+ * @param {string}  [opts.toDate]       - ISO date string
+ * @param {number}  [opts.minSeverity]  - Minimum severity (1–5)
+ * @param {string}  [opts.emergencyLevel] - CRITICAL | HIGH | MEDIUM | LOW
+ * @param {boolean} [opts.includeZones] - Append zone danger summary
+ * @returns {Promise<void>}
+ */
+export const exportReports = async ({
+  token,
+  format = 'csv',
+  fromDate,
+  toDate,
+  minSeverity,
+  emergencyLevel,
+  includeZones = false,
+} = {}) => {
+  const params = new URLSearchParams();
+  params.set('format', format);
+  if (fromDate)        params.set('from_date', fromDate);
+  if (toDate)          params.set('to_date', toDate);
+  if (minSeverity != null) params.set('min_severity', minSeverity);
+  if (emergencyLevel)  params.set('emergency_level', emergencyLevel);
+  if (includeZones)    params.set('include_zones', 'true');
+
+  const url = buildUrl(`/reports/export?${params.toString()}`);
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    const detail = parseJsonSafe(text)?.detail || text || `Export failed: ${response.status}`;
+    throw new Error(detail);
+  }
+
+  // Trigger browser download from blob
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+  const filename = filenameMatch?.[1] || `incident_report.${format}`;
+
+  const blobUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = blobUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(blobUrl);
+};
+
 
 // Patrol / Officer Operations
 
