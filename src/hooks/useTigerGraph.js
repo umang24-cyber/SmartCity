@@ -6,9 +6,9 @@ import {
 } from '../api/smartcity';
 
 export const useTigerGraph = () => {
-  const [danger, setDanger]             = useState(null);
+  const [danger, setDanger]                 = useState(null);
   const [incidents, setIncidents]       = useState([]);
-  const [safeRoute, setSafeRoute]       = useState(null);
+  const [safeRoute, setSafeRoute]           = useState(null);
   const [routeStart, setRouteStart]     = useState(null);
   const [routeEnd, setRouteEnd]         = useState(null);
   const [cluster, setCluster]           = useState(null);
@@ -77,13 +77,13 @@ export const useTigerGraph = () => {
       const d = await fetchIntersections();
       setIntersections(Array.isArray(d) ? d : []);
     } catch {
-      // Fallback inline mock (mirrors API shape)
+      // REGIONAL CONTEXT FIX: Updated fallback coordinates and locations to Chandigarh
       setIntersections([
-        { intersection_id: 'INT_001', intersection_name: 'MG Road & Brigade Rd', lat: 12.9716, lng: 77.5946, baseline_safety_score: 72, cluster_id: 1, isolation_score: 0.15 },
-        { intersection_id: 'INT_002', intersection_name: 'Residency Road & Richmond Rd', lat: 12.9698, lng: 77.5981, baseline_safety_score: 58, cluster_id: 1, isolation_score: 0.55 },
-        { intersection_id: 'INT_003', intersection_name: 'Cubbon Park North Gate', lat: 12.9763, lng: 77.5929, baseline_safety_score: 45, cluster_id: 2, isolation_score: 0.78 },
-        { intersection_id: 'INT_004', intersection_name: 'Lavelle Rd & Museum Rd', lat: 12.9725, lng: 77.5958, baseline_safety_score: 66, cluster_id: 1, isolation_score: 0.30 },
-        { intersection_id: 'INT_005', intersection_name: 'St Marks Rd & Cunningham Rd', lat: 12.9738, lng: 77.5965, baseline_safety_score: 78, cluster_id: 1, isolation_score: 0.10 },
+        { intersection_id: 'INT_001', intersection_name: 'Sector 17 Plaza & Jan Marg', lat: 30.7410, lng: 76.7822, baseline_safety_score: 72, cluster_id: 1, isolation_score: 0.15 },
+        { intersection_id: 'INT_002', intersection_name: 'Sector 43 ISBT Intersection', lat: 30.7124, lng: 76.7419, baseline_safety_score: 58, cluster_id: 1, isolation_score: 0.55 },
+        { intersection_id: 'INT_003', intersection_name: 'Sukhna Path & Madhya Marg (Sector 26)', lat: 30.7352, lng: 76.8011, baseline_safety_score: 45, cluster_id: 2, isolation_score: 0.78 },
+        { intersection_id: 'INT_004', intersection_name: 'Sector 35 Roundabout & Himalaya Marg', lat: 30.7228, lng: 76.7684, baseline_safety_score: 66, cluster_id: 1, isolation_score: 0.30 },
+        { intersection_id: 'INT_005', intersection_name: 'Sector 22 Market Crossroad', lat: 30.7381, lng: 76.7705, baseline_safety_score: 78, cluster_id: 1, isolation_score: 0.10 },
       ]);
     }
   }, []);
