@@ -19,19 +19,3 @@ services:
       - .env.example
     volumes:
       - ./backend_python:/app
-
-  cv:
-    build:
-      context: ./ai/cv
-    ports:
-      - "8001:8000"
-    volumes:
-      - ./ai/cv:/app
-
-  nlp:
-    build:
-      context: ./ai/nlp
-    ports:
-      - "8002:8000"code README.md
-    volumes:
-      - ./ai/nlp:/app
