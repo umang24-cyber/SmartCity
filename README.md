@@ -306,9 +306,10 @@ MIT — feel free to fork and build on top of this for your own city-safety use 
 
 ---
 
+````md
 ## Run with Docker
 
-Build and start all services:
+Build and start the application:
 
 ```bash
 docker compose up --build
@@ -318,5 +319,3 @@ Available services:
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:8000
-- CV Service: http://localhost:8001
-- NLP Service: http://localhost:8002
