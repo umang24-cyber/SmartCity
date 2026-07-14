@@ -107,7 +107,10 @@ def _zscore_detect(zone_id: str, recent_data: list[dict]) -> dict[str, Any]:
     inc_z   = (current_inc - inc_mean) / inc_std
     crd_z   = (current_crd - crd_mean) / crd_std
 
-    threshold = ANOMALY_ZSCORE_THRESHOLD
+    threshold = _effective_threshold(
+        n,
+        ANOMALY_ZSCORE_THRESHOLD,
+    )
 
     # ── Detect anomaly type ───────────────────────────────────────────────────
     inc_anomaly = inc_z > threshold
@@ -160,6 +163,20 @@ def _zscore_detect(zone_id: str, recent_data: list[dict]) -> dict[str, Any]:
             "current_crowd":     current_crd,
         },
     }
+
+def _effective_threshold(window_size: int, default_threshold: float) -> float:
+    """
+    Adjust threshold for small samples where classical z-scores
+    are mathematically bounded by sqrt(N - 1).
+    """
+
+    if window_size <= 7:
+        return min(
+            default_threshold,
+            (window_size - 1) ** 0.5 - 0.05,
+        )
+
+    return default_threshold
 
 
 def _std(values: list[float], mean: float) -> float:

@@ -21,7 +21,7 @@ export default function PublicCitizenPortal() {
   const [contacts, setContacts] = useState(null);
   const [tab, setTab] = useState('sos'); // 'sos' | 'route' | 'report'
   const [userPos, setUserPos] = useState(null);
-
+  const [gpsWarning, setGpsWarning] = useState(false);
   // Dual route state — set by SafeRoutePanel callback
   const [safestGeo, setSafestGeo] = useState(null);
   const [fastestGeo, setFastestGeo] = useState(null);
@@ -34,19 +34,40 @@ export default function PublicCitizenPortal() {
   const [reportResult, setReportResult] = useState(null);
   const [reportError, setReportError] = useState(null);
 
+  // Inline styles can't express a media query, so track the breakpoint in state.
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   useEffect(() => {
     fetchSafeZones().then(r => setSafeZones(Array.isArray(r) ? r : [])).catch(() => {});
     fetchSosContacts().then(r => setContacts(r)).catch(() => {});
     // Try get GPS for map centering
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        p => setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => {}
-      );
+  p => setUserPos({
+    lat: p.coords.latitude,
+    lng: p.coords.longitude
+  }),
+  () => setGpsWarning(true)
+);
     }
   }, []);
 
   const handleSOS = async () => {
+     if (!userPos) {
+    const confirmed = window.confirm(
+      'Your precise location could not be detected. SOS will use approximate city coordinates. Continue?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+  }
     setSosStatus('SENDING');
     try {
       let lat = 30.7333, lng = 76.7794; // Chandigarh fallback
@@ -119,19 +140,21 @@ export default function PublicCitizenPortal() {
           <div style={{
             flex: 1,
             display: 'flex',
-            flexDirection: window.innerWidth <= 768 ? 'column' : 'row',
-            gap: '0',
-            overflowX: 'auto'
+            flexDirection: isMobile ? 'column' : 'row',
+            minHeight: 0,
+            overflow: 'hidden'
           }}>
 
         {/* Left panel */}
 <div style={{
-  width: '100%',
+  width: isMobile ? '100%' : 'min(360px, 100vw)',
   maxWidth: '100%',
+  height: isMobile ? '50vh' : 'auto',
   flexShrink: 0,
   display: 'flex',
   flexDirection: 'column',
-  borderRight: '1px solid var(--border)',
+  borderRight: isMobile ? 'none' : '1px solid var(--border)',
+  borderBottom: isMobile ? '1px solid var(--border)' : 'none',
   background: 'var(--bg-panel)'
 }}>
           {/* Tab bar */}
@@ -161,6 +184,22 @@ export default function PublicCitizenPortal() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ padding: '1.5rem', border: '2px solid var(--red-alert)', background: 'rgba(255,51,68,0.08)', textAlign: 'center', borderRadius: '4px' }}>
                   <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--red-alert)', margin: '0 0 0.75rem', fontSize: '1rem', letterSpacing: '0.2em' }}>EMERGENCY OVERRIDE</h2>
+                    {gpsWarning && (
+                      <div
+                        style={{
+                          marginBottom: '12px',
+                          padding: '10px',
+                          background: 'rgba(255,51,68,0.1)',
+                          border: '1px solid var(--red-alert)',
+                          color: 'var(--red-alert)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.7rem'
+                        }}
+                      >
+                        ⚠ Your precise location could not be detected.
+                        SOS will use approximate city coordinates.
+                      </div>
+                    )}  
                   <button
                     onClick={handleSOS}
                     disabled={sosStatus === 'SENDING'}

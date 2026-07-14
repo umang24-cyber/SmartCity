@@ -47,9 +47,75 @@
             "hashed_password": "$2b$12$utR/gh74yyyoW6.zpK.BueInTv6sRbx8NGh7koQxJs5eXgxO/NV5O",
             "role": "user",
             "auth_provider": "password"
+        },
+        "balafromtn@gmail.com": {
+            "id": "u_77235bc8",
+            "name": "balaji",
+            "email": "balafromtn@gmail.com",
+            "hashed_password": "Spiderman@2099",
+            "role": "user",
+            "auth_provider": "password"
+        },
+        "user@gmail.com": {
+            "id": "u_e85d6c31",
+            "name": "Bala",
+            "email": "user@gmail.com",
+            "hashed_password": "Spiderman@2099",
+            "role": "officer",
+            "auth_provider": "password"
+        },
+        "superuser@smartcity.gov": {
+            "id": "u_9dcb0383",
+            "name": "bala",
+            "email": "superuser@smartcity.gov",
+            "hashed_password": "Spiderman@2099",
+            "role": "supervisor",
+            "auth_provider": "password"
         }
     },
     "incidents": [
+        {
+            "incident_id": "SOS_25FC4622",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-07-02T17:35:55.459120+00:00",
+            "source": "sos_alert",
+            "lat": 11.685633500000002,
+            "lng": 78.106661,
+            "location_id": "11.6856_78.1067",
+            "verified": true
+        },
+        {
+            "incident_id": "SOS_00F3743D",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-07-02T16:38:22.226871+00:00",
+            "source": "sos_alert",
+            "lat": 11.685633500000002,
+            "lng": 78.106661,
+            "location_id": "11.6856_78.1067",
+            "verified": true
+        },
+        {
+            "incident_id": "SOS_92E49696",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-07-02T16:02:16.839493+00:00",
+            "source": "sos_alert",
+            "lat": 11.685618,
+            "lng": 78.106648,
+            "location_id": "11.6856_78.1066",
+            "verified": true
+        },
         {
             "incident_id": "SOS_E915DC4A",
             "text": "EMERGENCY SOS via Public Portal",
@@ -181,6 +247,110 @@
             "lat": 12.9745,
             "lng": 77.596,
             "verified": true
+        }
+    ],
+    "reports": [
+        {
+            "report_id": "RPT_0A46748270",
+            "timestamp": "2026-07-02T17:36:37.749300+00:00",
+            "text": "qwertyuio",
+            "lat": 11.685633500000002,
+            "lng": 78.106661,
+            "incident_type": "suspicious_activity",
+            "source": "citizen_portal",
+            "sentiment": "neutral",
+            "sentiment_score": 0.5,
+            "distress_level": "LOW",
+            "emotion": "neutral",
+            "emotion_confidence": 0.9,
+            "emotion_all_scores": {
+                "fear": 0.0,
+                "anger": 0.0,
+                "disgust": 0.0,
+                "sadness": 0.0,
+                "surprise": 0.0,
+                "neutral": 0.9,
+                "joy": 0.1
+            },
+            "emergency_level": "NORMAL",
+            "is_emergency": false,
+            "matched_keywords": [],
+            "severity": 1.0,
+            "credibility_score": 20,
+            "credibility_label": "SPAM/FAKE",
+            "credibility_flags": [
+                "NON-INCIDENT"
+            ],
+            "entities": {
+                "time": [],
+                "location": [],
+                "people": [],
+                "clothing": [],
+                "vehicles": [],
+                "physical_description": []
+            },
+            "duplicate_score": 0.0,
+            "is_duplicate": false,
+            "duplicate_matched_index": null,
+            "auto_response": "\u26ab This does not appear to be a safety-related report. If you have a genuine safety concern, please describe the incident in detail.",
+            "recommended_actions": [
+                "Archive for trend analysis"
+            ],
+            "word_count": 1,
+            "processing_ms": 0.92,
+            "loader_status": "loaded",
+            "reasoning": "Input classified as non-incident: no safety keywords detected."
+        },
+        {
+            "report_id": "RPT_77CA25ABAB",
+            "timestamp": "2026-07-02T17:37:14.622523+00:00",
+            "text": ",mnbvcfghbn",
+            "lat": 11.685633500000002,
+            "lng": 78.106661,
+            "incident_type": "unsafe_road",
+            "source": "citizen_portal",
+            "sentiment": "neutral",
+            "sentiment_score": 0.5,
+            "distress_level": "LOW",
+            "emotion": "neutral",
+            "emotion_confidence": 0.9,
+            "emotion_all_scores": {
+                "fear": 0.0,
+                "anger": 0.0,
+                "disgust": 0.0,
+                "sadness": 0.0,
+                "surprise": 0.0,
+                "neutral": 0.9,
+                "joy": 0.1
+            },
+            "emergency_level": "NORMAL",
+            "is_emergency": false,
+            "matched_keywords": [],
+            "severity": 1.0,
+            "credibility_score": 20,
+            "credibility_label": "SPAM/FAKE",
+            "credibility_flags": [
+                "NON-INCIDENT"
+            ],
+            "entities": {
+                "time": [],
+                "location": [],
+                "people": [],
+                "clothing": [],
+                "vehicles": [],
+                "physical_description": []
+            },
+            "duplicate_score": 0.0,
+            "is_duplicate": false,
+            "duplicate_matched_index": null,
+            "auto_response": "\u26ab This does not appear to be a safety-related report. If you have a genuine safety concern, please describe the incident in detail.",
+            "recommended_actions": [
+                "Archive for trend analysis"
+            ],
+            "word_count": 1,
+            "processing_ms": 27.72,
+            "loader_status": "loaded",
+            "reasoning": "Input classified as non-incident: no safety keywords detected."
         }
     ]
 }
