@@ -302,3 +302,20 @@ Full interactive docs: `http://localhost:8000/docs`
 ## 📜 License
 
 MIT — feel free to fork and build on top of this for your own city-safety use case.
+
+
+---
+
+````md
+## Run with Docker
+
+Build and start the application:
+
+```bash
+docker compose up --build
+```
+
+Available services:
+
+- Frontend: http://localhost:5173
+- Backend: http://localhost:8000

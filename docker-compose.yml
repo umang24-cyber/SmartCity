@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  frontend:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "npm install && npm run dev -- --host"
+    ports:
+      - "5173:5173"
+
+  backend:
+    build:
+      context: ./backend_python
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.example
+    volumes:
+      - ./backend_python:/app
