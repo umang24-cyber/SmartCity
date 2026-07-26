@@ -36,3 +36,6 @@ pyTigerGraph==1.6.1
 # ─── Minimal always-on ML deps (used by mock fallbacks) ─────────────────────
 numpy
 scikit-learn
+
+# ─── Report Export (CSV/PDF generation) ──────────────────────────────────────
+fpdf2

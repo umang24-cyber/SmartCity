@@ -34,7 +34,15 @@ export default function PublicCitizenPortal() {
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportResult, setReportResult] = useState(null);
   const [reportError, setReportError] = useState(null);
-  
+
+  // Inline styles can't express a media query, so track the breakpoint in state.
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     fetchSafeZones().then(r => setSafeZones(Array.isArray(r) ? r : [])).catch(() => {});
@@ -142,20 +150,22 @@ export default function PublicCitizenPortal() {
           <div style={{
             flex: 1,
             display: 'flex',
-            flexDirection: window.innerWidth <= 768 ? 'column' : 'row',
-            gap: '0',
-            overflowX: 'auto'
+            flexDirection: isMobile ? 'column' : 'row',
+            minHeight: 0,
+            overflow: 'hidden'
           }}>
 
         {/* Left panel */}
 <div style={{
-  width: window.innerWidth <= 768 ? '100%' : '420px',
-  //width: '100%',
-  //maxWidth: '100%',
+
+  width: isMobile ? '100%' : 'min(360px, 100vw)',
+  maxWidth: '100%',
+  height: isMobile ? '50vh' : 'auto',
   flexShrink: 0,
   display: 'flex',
   flexDirection: 'column',
-  borderRight: '1px solid var(--border)',
+  borderRight: isMobile ? 'none' : '1px solid var(--border)',
+  borderBottom: isMobile ? '1px solid var(--border)' : 'none',
   background: 'var(--bg-panel)'
 }}>
           {/* Tab bar */}

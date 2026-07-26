@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Explorer from '../components/Explorer';
+import ExportModal from '../components/ExportModal';
 import { getOverview, getSupervisorTrends, getInfrastructureStatus, fetchSupervisorReports } from '../api/smartcity';
 import { useTigerGraph } from '../hooks/useTigerGraph';
 import ModeSlider from '../components/ModeSlider';
@@ -45,7 +46,7 @@ function FloatingWindow({
   id, title, subtitle, badge, badgeColor = 'var(--amber)',
   accentColor = 'var(--amber)', icon, children,
   defaultPos, collapsed: initialCollapsed = false,
-  collapsedContent, zIndex = 100, onFocus,
+  collapsedContent, headerActions, zIndex = 100, onFocus,
 }) {
   const [pos, setPos] = useState(defaultPos);
   const [collapsed, setCollapsed] = useState(initialCollapsed);
@@ -116,6 +117,11 @@ function FloatingWindow({
           </div>
           {badge && (
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', padding: '2px 7px', border: `1px solid ${badgeColor}60`, color: badgeColor, background: `${badgeColor}10`, borderRadius: 3, letterSpacing: '0.08em', flexShrink: 0 }}>{badge}</span>
+          )}
+          {headerActions && (
+            <div className="fw-no-drag" style={{ display: 'flex', gap: '0.4rem', marginLeft: '0.2rem' }}>
+              {headerActions}
+            </div>
           )}
           <button
             className="fw-no-drag"
@@ -379,6 +385,7 @@ export default function SupervisorDashboard() {
   const [stats, setStats] = useState(null);
   const [trends, setTrends] = useState(null);
   const [infraStatus, setInfraStatus] = useState([]);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [windowZIndexes, setWindowZIndexes] = useState({ reports: 200, infra: 200, trends: 200, stats: 200 });
   const zCounter = useRef(200);
   const refreshTimerRef = useRef(null);
@@ -464,6 +471,24 @@ export default function SupervisorDashboard() {
         badgeColor={reports.length > 0 ? 'var(--red-alert)' : 'rgba(255,255,255,0.3)'}
         accentColor="var(--medium)"
         icon="⬡"
+        headerActions={
+          <button
+            onClick={() => setShowExportModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.3rem',
+              padding: '2px 8px',
+              background: 'transparent',
+              border: '1px solid var(--medium)',
+              color: 'var(--medium)', borderRadius: 4, cursor: 'pointer',
+              fontSize: '0.55rem', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--medium)'; e.currentTarget.style.borderColor = 'var(--medium)'; }}
+          >
+            EXPORT
+          </button>
+        }
         defaultPos={{ x: window.innerWidth - 380, y: 80 }}
         zIndex={windowZIndexes.reports}
         onFocus={focusWindow}
@@ -597,6 +622,13 @@ export default function SupervisorDashboard() {
           </div>
         </FloatingWindow>
       )}
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        token={token}
+      />
 
       <style>{`
         @keyframes statPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; text-shadow: 0 0 12px currentColor; } }

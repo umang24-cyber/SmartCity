@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 OSRM_BASE = "http://router.project-osrm.org"   # free public OSRM
 OSRM_TIMEOUT = 8.0
+# Shared HTTP client reused across all OSRM requests.
+_osrm_client = httpx.AsyncClient(timeout=OSRM_TIMEOUT)
 
 DANGER_LEVELS = {
     "safe":     (0.00, 0.25),
@@ -126,9 +128,8 @@ async def _osrm_route(
         "alternatives": "true" if alternatives else "false",
     }
     try:
-        async with httpx.AsyncClient(timeout=OSRM_TIMEOUT) as client:
-            resp = await client.get(url, params=params)
-            data = resp.json()
+        resp = await _osrm_client.get(url, params=params)
+        data = resp.json()
         if data.get("code") == "Ok" and data.get("routes"):
             return data["routes"]
         return None
@@ -397,3 +398,4 @@ async def compute_dual_routes(
             "balanced_danger": balanced["stats"]["overall_danger_score"],
         },
     }
+

@@ -7,6 +7,7 @@ Router map (all prefixed with /api/v1):
   /api/v1/danger/score     → danger.py     (AI-powered POST, LSTM+CV+anomaly aggregation)
   /api/v1/danger-score     → danger_score.py (Simple GET, mock/TG-backed)
   /api/v1/reports          → reports.py    (GET list, POST submit, POST /analyze NLP)
+  /api/v1/reports/export   → export.py     (GET, CSV/PDF download, supervisor-only)
   /api/v1/cctv             → cctv.py       (POST /analyze, POST /analyze-b64)
   /api/v1/anomaly          → anomaly.py    (POST /detect)
   /api/v1/safe-route       → safe_route.py (GET /)
@@ -41,7 +42,7 @@ from ai.anomaly.loader import get_anomaly_bundle
 
 # ── Routers ────────────────────────────────────────────────────────────────────
 # AI-powered routers (use app.state.models)
-from routers import danger, cctv, anomaly, reports
+from routers import danger, cctv, anomaly, reports, export
 
 # Data / graph routers (use mock_data or TigerGraph directly)
 from routers import safe_route, intersections, danger_score, incidents, cluster_info, graph
@@ -96,14 +97,21 @@ async def lifespan(app: FastAPI):
     app.state.models = {}
 
     # Initialize TigerGraph connection
-    from custom_db.tigergraph_client import get_client
-    get_client().connect()
+    from config import USE_MOCK_DB
+    if not USE_MOCK_DB:
+        from custom_db.tigergraph_client import get_client
+        try:
+            get_client().connect()
+        except Exception as e:
+            logger.warning(f"Failed to connect to TigerGraph: {e}")
 
     # Start background loading — app begins serving immediately
     task = asyncio.create_task(_load_models_task(app))
 
     yield  # Application serves requests here
 
+    from services.portal_service import _osrm_client
+    await _osrm_client.aclose()
     task.cancel()
     app.state.models.clear()
 
@@ -158,6 +166,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 app.include_router(danger.router,         prefix="/api/v1")
 app.include_router(danger_score.router,   prefix="/api/v1")
 app.include_router(reports.router,        prefix="/api/v1")
+app.include_router(export.router,         prefix="/api/v1")
 app.include_router(cctv.router,           prefix="/api/v1")
 app.include_router(anomaly.router,        prefix="/api/v1")
 
@@ -209,3 +218,4 @@ async def root():
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
