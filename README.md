@@ -1,4 +1,4 @@
-# 🌆 Civora AI-Powered Smart Urban Safety & Emergency Response Platform
+﻿# 🌆 Civora AI-Powered Smart Urban Safety & Emergency Response Platform
 
 > **Hackathon Submission** | IIT Delhi × TigerGraph  
 > A real-time, graph-powered urban-safety platform for Chandigarh that combines AI inference, live CCTV crowd analysis, incident NLP, and multi-role dashboards.
@@ -245,6 +245,55 @@ python load_to_tg.py
 
 > **Note:** The loader patches Python's DNS resolver to bypass institutional DNS restrictions that block TigerGraph Cloud hostnames.
 
+## PostgreSQL Local Development
+
+Use this path when you want to run the backend against a local PostgreSQL instance instead of TigerGraph.
+
+### 1. Install PostgreSQL
+
+Install PostgreSQL 14 or newer using your OS package manager or the official installer, then make sure the server is running locally.
+
+### 2. Create a database
+
+Create a database for the project, for example:
+
+```sql
+CREATE DATABASE smartcity;
+```
+
+### 3. Run the schema
+
+Apply the schema from `backend_python/schema.sql`:
+
+```bash
+psql -h localhost -U postgres -d smartcity -f backend_python/schema.sql
+```
+
+### 4. Configure the backend
+
+Set these environment variables before starting the backend:
+
+```bash
+DB_TYPE=postgres
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=smartcity
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+```
+
+`DB_TYPE=postgres` tells `custom_db` to route graph-style calls through the PostgreSQL adapter while keeping the TigerGraph path available.
+
+### 5. Load the local data
+
+Run the importer to load the existing mock graph data into PostgreSQL:
+
+```bash
+python data/load_to_postgres.py
+```
+
+The script reads the project’s local JSON graph data, upserts zones, upserts incidents, and prints progress while importing.
+
 ---
 
 ## 🔑 Environment / Configuration
@@ -257,6 +306,12 @@ All settings live in `backend_python/config.py`. Key variables:
 | `TG_GRAPHNAME` | `UrbanSafetyGraph` | Target graph |
 | `TG_TOKEN` | JWT bearer | Auth token |
 | `USE_MOCK_DB` | `false` | Use in-memory mock instead of TG |
+| `DB_TYPE` | `tigergraph` | Select `tigergraph` or `postgres` backend |
+| `POSTGRES_HOST` | `localhost` | PostgreSQL host |
+| `POSTGRES_PORT` | `5432` | PostgreSQL port |
+| `POSTGRES_DB` | `smartcity` | PostgreSQL database name |
+| `POSTGRES_USER` | `postgres` | PostgreSQL user |
+| `POSTGRES_PASSWORD` | `postgres` | PostgreSQL password |
 | `ENABLE_CV` | `true` | Enable CV inference |
 | `ENABLE_NLP` | `true` | Enable NLP inference |
 | `ENABLE_LSTM` | `true` | Enable LSTM inference |
@@ -319,3 +374,7 @@ Available services:
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:8000
+
+
+
+

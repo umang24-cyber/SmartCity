@@ -5,7 +5,7 @@ Backward-compatibility shim.
 All logic has moved to custom_db/tigergraph_client.py.
 Import from there directly in new code.
 """
-from custom_db.tigergraph_client import (  # noqa: F401
+from custom_db import (  # noqa: F401
     TigerGraphClient,
     get_client,
     get_zone_data,

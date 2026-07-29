@@ -48,6 +48,14 @@ TIGERGRAPH_HOST: str = os.getenv("TG_HOST", "https://tg-955b4acb-5d72-46eb-a8f4-
 TIGERGRAPH_GRAPH: str = os.getenv("TG_GRAPHNAME", "UrbanSafetyGraph")
 TIGERGRAPH_TOKEN: str = os.getenv("TG_TOKEN", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwYWxha21pdHRhbC5idDI1Y3NlZHNAcGVjLmVkdS5pbiIsImlhdCI6MTc3NTExMzA3NiwiZXhwIjoxNzgyODg5MDgxLCJpc3MiOiJUaWdlckdyYXBoIn0.qDivaGPN9N9nRCwDnepSqgXNyjF76yo1ABmLMngEHXg")
 
+DB_TYPE: str = os.getenv("DB_TYPE", "tigergraph")
+
+POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", "5432"))
+POSTGRES_DB: str = os.getenv("POSTGRES_DB", "smartcity")
+POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres")
+
 USE_MOCK_DB: bool = False
 
 
