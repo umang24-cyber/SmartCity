@@ -26,6 +26,7 @@ class UserLoginRequest(BaseModel):
 
 class SupervisorLoginRequest(BaseModel):
     email: str
+    password: str
     access_key: str
 
 class UserSignupRequest(BaseModel):
@@ -153,6 +154,13 @@ async def login_supervisor(request: SupervisorLoginRequest):
     user_dict = get_user(request.email)
     if not user_dict or user_dict["role"] != "supervisor":
         raise HTTPException(status_code=400, detail="Supervisor account not found.")
+    
+    if not request.password or not user_dict.get("hashed_password"):
+        raise HTTPException(status_code=400, detail="Password is required.")
+
+    if not pwd_context.verify(request.password, user_dict["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Invalid Credentials")
+
     if not validate_supervisor_access_key(request.access_key):
         raise HTTPException(status_code=403, detail="Invalid supervisor access key.")
     return _build_auth_response(user_dict)

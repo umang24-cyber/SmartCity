@@ -156,8 +156,8 @@ export const apiPost = async (endpoint, body, token = null, options = {}) => {
 export const loginUser = async (email, password) =>
   apiPost('/auth/login/user', { email, password });
 
-export const loginSupervisor = async (email, accessKey) =>
-  apiPost('/auth/login/supervisor', { email, access_key: accessKey });
+export const loginSupervisor = async (email, password, accessKey) =>
+  apiPost('/auth/login/supervisor', { email, password, access_key: accessKey });
 
 export const loginOfficer = async (email, password) =>
   apiPost('/auth/login/officer', { email, password });
