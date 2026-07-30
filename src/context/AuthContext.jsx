@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
     try {
       let data;
       if (role === 'supervisor') {
-        data = await apiLoginSupervisor(email, accessKey);
+        data = await apiLoginSupervisor(email, password, accessKey);
       } else if (role === 'officer') {
         data = await apiLoginOfficer(email, password);
       } else {
