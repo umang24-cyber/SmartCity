@@ -69,7 +69,7 @@ class PostgresClient:
         query = """
             SELECT *
             FROM zones
-            WHERE zone_id = $1 OR id = $1
+            WHERE zone_id = $1
             LIMIT 1
         """
         async with pool.acquire() as conn:
@@ -81,7 +81,7 @@ class PostgresClient:
         query = """
             SELECT *
             FROM zones
-            ORDER BY zone_id NULLS LAST, id NULLS LAST
+            ORDER BY zone_id NULLS LAST
             LIMIT $1
         """
         async with pool.acquire() as conn:
@@ -93,7 +93,7 @@ class PostgresClient:
         query = """
             UPDATE zones
             SET danger_score = $2
-            WHERE zone_id = $1 OR id = $1
+            WHERE zone_id = $1
         """
         async with pool.acquire() as conn:
             await conn.execute(query, zone_id, danger_score)
@@ -149,7 +149,7 @@ async def get_zone_data(zone_id: str) -> dict:
     client = get_client()
     result = await client.get_zone(zone_id)
     if result:
-        result.setdefault("zone_id", result.get("zone_id", result.get("id", zone_id)))
+        result.setdefault("zone_id", zone_id)
         return result
 
     if "_" in zone_id:
@@ -158,11 +158,11 @@ async def get_zone_data(zone_id: str) -> dict:
             lat = float(lat_s)
             lng = float(lng_s)
         except ValueError:
-            raise RuntimeError("PostgreSQL client is not connected")
+            raise RuntimeError(f"Data not found for zone '{zone_id}'")
 
         zones = await get_all_zones(limit=10000)
         if not zones:
-            raise RuntimeError("PostgreSQL client is not connected")
+            raise RuntimeError("No zones found")
 
         nearest = min(
             zones,
@@ -171,10 +171,10 @@ async def get_zone_data(zone_id: str) -> dict:
                 float(z.get("lng", z.get("lon", z.get("longitude", 0.0)))) - lng,
             ),
         )
-        nearest.setdefault("zone_id", nearest.get("zone_id", nearest.get("id")))
+        nearest.setdefault("zone_id", zone_id)
         return nearest
 
-    raise RuntimeError("PostgreSQL client is not connected")
+    raise RuntimeError(f"Data not found for zone '{zone_id}'")
 
 
 async def update_zone_danger_score(zone_id: str, danger_score: float) -> None:
@@ -184,9 +184,6 @@ async def update_zone_danger_score(zone_id: str, danger_score: float) -> None:
 
 async def get_all_zones(limit: int = 200) -> list[dict]:
     client = get_client()
-    zones = await client.get_all_zones(limit=limit)
-    if not zones:
-        raise RuntimeError("PostgreSQL client is not connected")
-    for zone in zones:
-        zone.setdefault("zone_id", zone.get("zone_id", zone.get("id")))
-    return zones
+    return await client.get_all_zones(limit=limit)
+
+
