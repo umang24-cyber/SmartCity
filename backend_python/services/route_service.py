@@ -284,3 +284,4 @@ async def compute_safe_route(
         return _build_route_payload(direct_path, nodes, edge_meta, start, end, mode)
 
 
+from custom_db import get_zone_data

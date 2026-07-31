@@ -21,7 +21,7 @@ export default function Login() {
       const user = await login({
         role: mode,
         email,
-        password: mode === 'officer' ? password : undefined,
+        password,
         accessKey: mode === 'supervisor' ? accessKey : undefined
       });
       if (user.role === 'supervisor') navigate('/supervisor');
@@ -73,7 +73,18 @@ export default function Login() {
             />
           </div>
 
-          {mode === 'supervisor' ? (
+          <div className="input-group">
+            <label>PASSWORD</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              placeholder="Enter Password"
+            />
+          </div>
+
+          {mode === 'supervisor' && (
             <div className="input-group">
               <label>SUPERVISOR ACCESS KEY</label>
               <input
@@ -82,17 +93,6 @@ export default function Login() {
                 onChange={e => setAccessKey(e.target.value)}
                 required
                 placeholder="Enter Supervisor Access Key"
-              />
-            </div>
-          ) : (
-            <div className="input-group">
-              <label>PASSWORD</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                placeholder="Enter Password"
               />
             </div>
           )}
