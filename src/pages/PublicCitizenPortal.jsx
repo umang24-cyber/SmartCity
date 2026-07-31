@@ -34,7 +34,12 @@ export default function PublicCitizenPortal() {
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportResult, setReportResult] = useState(null);
   const [reportError, setReportError] = useState(null);
-
+  
+  useEffect(()=> {
+    if(tab !=='report'){
+      setReportLocation(null);
+    }
+  },[tab]);
   // Inline styles can't express a media query, so track the breakpoint in state.
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 

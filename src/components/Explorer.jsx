@@ -55,21 +55,7 @@ function ReportLocationSelector({ onSelect }) {
   });
   return null;
 }
-{/*// Build a GeoJSON LineString from an array of {lat,lng} waypoints or segments array
-function buildLineGeoJSON(arr, color) {
-  if (!arr || !arr.length) return null;
-  // If arr is already GeoJSON FeatureCollection or Feature
-  if (arr.type) return { ...arr, _color: color };
-  // Array of {lat, lng}
-  if (arr[0]?.lat != null) {
-    return {
-      type: 'Feature',
-      properties: { color },
-      geometry: { type: 'LineString', coordinates: arr.map(p => [p.lng, p.lat]) }
-    };
-  }
-  return null;
-}*/}
+
 
 export default function Explorer({
   intersections = [],
