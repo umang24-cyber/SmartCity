@@ -92,14 +92,23 @@
 
 * { 
   box-sizing: border-box; 
-  cursor: none !important; 
+  cursor: pointer;
 }
 
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  cursor: none !important;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  * {
+    cursor: none !important;
+  }
+
+  html, body, #root {
+    cursor: none !important;
+  }
 }
 
 body {
@@ -198,6 +207,7 @@ body {
   text-transform: uppercase;
   color: var(--text-primary);
   font-weight: 700;
+
 }
 
 .label-sm {
@@ -465,7 +475,7 @@ body {
   background: transparent;
   border: none;
   border-left: 2px solid transparent;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: all 0.2s;
   width: 100%;
   text-align: left;
