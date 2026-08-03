@@ -57,9 +57,6 @@ export default function Login() {
           <button type="button" className={mode === 'officer' ? 'active' : ''} onClick={() => setMode('officer')}>
             OFFICER
           </button>
-          <button type="button" className={mode === 'citizen' ? 'active' : ''} onClick={() => setMode('citizen')}>
-            CITIZEN
-          </button>
         </div>
 
         {error && <div className="login-error">{error}</div>}
