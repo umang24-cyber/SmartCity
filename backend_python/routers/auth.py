@@ -152,9 +152,11 @@ async def login_user(request: UserLoginRequest):
 @router.post("/login/supervisor", response_model=LoginResponse)
 async def login_supervisor(request: SupervisorLoginRequest):
     user_dict = get_user(request.email)
+
+    if not user_dict or user_dict["role"] != "supervisor":
     if not user_dict or user_dict["role"] != "supervisor":
         raise HTTPException(status_code=400, detail="Supervisor account not found.")
-    
+
     if not request.password or not user_dict.get("hashed_password"):
         raise HTTPException(status_code=400, detail="Password is required.")
 
@@ -163,6 +165,7 @@ async def login_supervisor(request: SupervisorLoginRequest):
 
     if not validate_supervisor_access_key(request.access_key):
         raise HTTPException(status_code=403, detail="Invalid supervisor access key.")
+   
     return _build_auth_response(user_dict)
 
 
