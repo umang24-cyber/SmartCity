@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap, CircleMarker ,useMapEvents} from 'react-leaflet';
 import * as L from 'leaflet';
 import { useTheme } from '../context/ThemeContext';
 import { fetchReports } from '../api/smartcity';
@@ -42,21 +42,20 @@ function emergencyColor(level) {
   }
 }
 
-// Build a GeoJSON LineString from an array of {lat,lng} waypoints or segments array
-function buildLineGeoJSON(arr, color) {
-  if (!arr || !arr.length) return null;
-  // If arr is already GeoJSON FeatureCollection or Feature
-  if (arr.type) return { ...arr, _color: color };
-  // Array of {lat, lng}
-  if (arr[0]?.lat != null) {
-    return {
-      type: 'Feature',
-      properties: { color },
-      geometry: { type: 'LineString', coordinates: arr.map(p => [p.lng, p.lat]) }
-    };
-  }
+function ReportLocationSelector({ onSelect }) {
+  useMapEvents({
+    click(e) {
+      if (onSelect) {
+        onSelect({
+          lat: e.latlng.lat,
+          lng: e.latlng.lng
+        });
+      }
+    }
+  });
   return null;
 }
+
 
 export default function Explorer({
   intersections = [],
@@ -68,6 +67,9 @@ export default function Explorer({
   safeZones = [],
   selectedIntersection = null,
   userPosition = null,
+  reportLocation = null,       
+  onReportLocationSelect = null,
+  enableLocationSelect=false,
   backendUrl = 'http://127.0.0.1:8000',
 }) {
   const { mode } = useTheme();
@@ -183,7 +185,10 @@ export default function Explorer({
             url={mode === 'dark' ? TILE_DARK : TILE_LIGHT}
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-
+          {enableLocationSelect && (
+          <ReportLocationSelector
+           onSelect={onReportLocationSelect}/>
+          )}
           {selectedPos && <MapUpdater center={selectedPos} zoom={16} />}
           {userPosition && <MapFlyTo coords={[userPosition.lat, userPosition.lng]} />}
 
@@ -327,7 +332,34 @@ export default function Explorer({
               <Popup><div style={{ fontFamily: 'monospace', color: '#00ff88', padding: '4px' }}>📍 YOUR LOCATION</div></Popup>
             </Marker>
           )}
-
+          {/*target block made DRAGGABLE */}
+          {reportLocation && (
+            <Marker
+              position={[reportLocation.lat, reportLocation.lng]}
+              draggable={true}
+              eventHandlers={{
+                dragend: (e) => {
+                  const marker = e.target;
+                  const position = marker.getLatLng();
+                  if (onReportLocationSelect) {
+                    onReportLocationSelect({ lat: position.lat, lng: position.lng });
+                  }
+                },
+              }}
+              icon={L.divIcon({
+                className: '',
+                html: `<div style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:rgba(255,51,68,0.2);border:2px solid #ff3344;border-radius:50%;box-shadow:0 0 12px #ff3344;font-size:11px;font-weight:bold;">📍</div>`,
+                iconSize: [20, 20], iconAnchor: [10, 10],
+              })}
+            >
+              <Popup>
+                <div style={{ fontFamily: 'monospace', color: '#ff3344', fontSize: '0.7rem' }}>
+                  📍 INCIDENT LOCATION<br/>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.6rem' }}>Drag pin or click map to move</span>
+                </div>
+              </Popup>
+            </Marker>
+          )}
           {/* Selected node highlight */}
           {selectedPos && (
             <CircleMarker
