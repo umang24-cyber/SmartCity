@@ -22,6 +22,9 @@ import logging
 import math
 from typing import Any
 
+from custom_db import get_all_zones
+
+
 logger = logging.getLogger(__name__)
 
 OSRM_BASE = "http://router.project-osrm.org"   # free public OSRM
@@ -64,12 +67,12 @@ def _drive_time(m: float) -> float:
     return round(m / 500.0, 1)  # ~30 km/h urban
 
 
-def _danger_at(lat: float, lng: float) -> float:
+def _danger_at(lat: float, lng: float, zones: list[dict] | None = None) -> float:
     """Danger score at a coordinate based on proximity to known zones."""
     try:
-        from custom_db.mock_db import MOCK_ZONES
+        zones = zones or []
         best_d, best_score = float("inf"), 0.35
-        for z in MOCK_ZONES.values():
+        for z in zones:
             dist = math.hypot(z["lat"] - lat, z["lng"] - lng)
             if dist < best_d:
                 best_d = dist
@@ -82,8 +85,6 @@ def _danger_at(lat: float, lng: float) -> float:
     except Exception:
         seed = (int(lat * 1000) * 31 + int(lng * 1000) * 17) % 100
         return round(0.1 + (seed / 100) * 0.8, 3)
-
-
 def _decode_polyline(encoded: str) -> list[tuple[float, float]]:
     """Decode Google-style encoded polyline → list of (lat, lng)."""
     result = []
@@ -149,11 +150,12 @@ def _interpolate(start: tuple, end: tuple, n: int = 10) -> list[tuple]:
 def _build_route_from_coords(
     coords_latlon: list[tuple[float, float]],
     mode: str,
+    zones: list[dict] | None = None,
     osrm_distance: float | None = None,
     osrm_duration: float | None = None,
 ) -> dict:
     """Build the standard route payload from a list of (lat,lng) waypoints."""
-    scores = [_danger_at(lat, lng) for lat, lng in coords_latlon]
+    scores = [_danger_at(lat, lng, zones) for lat, lng in coords_latlon]
     avg = round(sum(scores) / len(scores), 3) if scores else 0.35
     dist = osrm_distance or _haversine(coords_latlon[0], coords_latlon[-1])
     eta = (osrm_duration / 60.0) if osrm_duration else (
@@ -203,8 +205,6 @@ def _build_route_from_coords(
         "segments": {"type": "FeatureCollection", "features": seg_features},
         "stats": stats,
     }
-
-
 def _recommendation(level: str) -> str:
     return {
         "safe":     "Route is safe. Proceed normally.",
@@ -217,6 +217,7 @@ def _recommendation(level: str) -> str:
 def _find_safe_waypoints(
     start: tuple[float, float],
     end: tuple[float, float],
+    zones: list[dict] | None = None,
     avoid_danger_above: float = 0.45,
 ) -> list[tuple[float, float]]:
     """
@@ -224,8 +225,7 @@ def _find_safe_waypoints(
     Returns 1-2 low-danger zone coordinates to route via.
     """
     try:
-        from custom_db.mock_db import MOCK_ZONES
-        zones = list(MOCK_ZONES.values())
+        zones = zones or []
 
         # Focus on zones between start-end bounding box (with padding)
         min_lat = min(start[0], end[0]) - 0.02
@@ -252,17 +252,15 @@ def _find_safe_waypoints(
         return wps
     except Exception:
         return []
-
-
 def _find_balanced_waypoints(
     start: tuple[float, float],
     end: tuple[float, float],
+    zones: list[dict] | None = None,
     max_danger: float = 0.55,
 ) -> list[tuple[float, float]]:
     """Slightly different path from safe — picks a single balanced waypoint."""
     try:
-        from custom_db.mock_db import MOCK_ZONES
-        zones = list(MOCK_ZONES.values())
+        zones = zones or []
 
         min_lat = min(start[0], end[0]) - 0.015
         max_lat = max(start[0], end[0]) + 0.015
@@ -288,8 +286,6 @@ def _find_balanced_waypoints(
         return [(candidates[0]["lat"], candidates[0]["lng"])]
     except Exception:
         return []
-
-
 async def compute_dual_routes(
     start_lat: float,
     start_lng: float,
@@ -305,13 +301,14 @@ async def compute_dual_routes(
     start = (start_lat, start_lng)
     end = (end_lat, end_lng)
     osrm_profile = "foot" if mode == "walking" else "car"
+    zones = await get_all_zones()
 
     # ── OSRM for fastest (direct) + alternatives ─────────────────────────────
     osrm_routes = await _osrm_route(start, end, profile=osrm_profile, alternatives=True)
 
     # ── Safe waypoints ────────────────────────────────────────────────────────
-    safe_wps = _find_safe_waypoints(start, end, avoid_danger_above=0.35)
-    balanced_wps = _find_balanced_waypoints(start, end, max_danger=0.50)
+    safe_wps = _find_safe_waypoints(start, end, zones, avoid_danger_above=0.35)
+    balanced_wps = _find_balanced_waypoints(start, end, zones, max_danger=0.50)
 
     # ── OSRM for safest (via safe waypoints) ─────────────────────────────────
     osrm_safe = await _osrm_route(start, end, waypoints=safe_wps, profile=osrm_profile) if safe_wps else None
@@ -321,16 +318,16 @@ async def compute_dual_routes(
     if osrm_routes:
         r0 = osrm_routes[0]
         fastest_coords = _decode_polyline(r0["geometry"])
-        fastest = _build_route_from_coords(fastest_coords, mode, r0["distance"], r0["duration"])
+        fastest = _build_route_from_coords(fastest_coords, mode, zones, r0["distance"], r0["duration"])
     else:
         fastest_coords = _interpolate(start, end, 12)
-        fastest = _build_route_from_coords(fastest_coords, mode)
+        fastest = _build_route_from_coords(fastest_coords, mode, zones)
 
     # ── Build safest route ────────────────────────────────────────────────────
     if osrm_safe and osrm_safe[0]:
         rs = osrm_safe[0]
         safest_coords = _decode_polyline(rs["geometry"])
-        safest = _build_route_from_coords(safest_coords, mode, rs["distance"], rs["duration"])
+        safest = _build_route_from_coords(safest_coords, mode, zones, rs["distance"], rs["duration"])
     elif safe_wps:
         # Interpolate through safe waypoints
         wps = [start] + safe_wps + [end]
@@ -338,33 +335,33 @@ async def compute_dual_routes(
         for i in range(len(wps) - 1):
             seg = _interpolate(wps[i], wps[i + 1], 6)
             all_pts.extend(seg if i == 0 else seg[1:])
-        safest = _build_route_from_coords(all_pts, mode)
+        safest = _build_route_from_coords(all_pts, mode, zones)
     else:
         # Push slightly north for visual differentiation
         alt_wps = _interpolate((start[0] + 0.004, start[1] + 0.001), (end[0] + 0.004, end[1]), 12)
-        safest = _build_route_from_coords(alt_wps, mode)
+        safest = _build_route_from_coords(alt_wps, mode, zones)
 
     # ── Build balanced route ──────────────────────────────────────────────────
     if osrm_bal and osrm_bal[0]:
         rb = osrm_bal[0]
         balanced_coords = _decode_polyline(rb["geometry"])
-        balanced = _build_route_from_coords(balanced_coords, mode, rb["distance"], rb["duration"])
+        balanced = _build_route_from_coords(balanced_coords, mode, zones, rb["distance"], rb["duration"])
     elif balanced_wps:
         wps = [start] + balanced_wps + [end]
         all_pts = []
         for i in range(len(wps) - 1):
             seg = _interpolate(wps[i], wps[i + 1], 6)
             all_pts.extend(seg if i == 0 else seg[1:])
-        balanced = _build_route_from_coords(all_pts, mode)
+        balanced = _build_route_from_coords(all_pts, mode, zones)
     else:
         # Use OSRM alternative if available, else slight deflection
         if osrm_routes and len(osrm_routes) > 1:
             r1 = osrm_routes[1]
             balanced_coords = _decode_polyline(r1["geometry"])
-            balanced = _build_route_from_coords(balanced_coords, mode, r1["distance"], r1["duration"])
+            balanced = _build_route_from_coords(balanced_coords, mode, zones, r1["distance"], r1["duration"])
         else:
             alt_wps = _interpolate((start[0] + 0.002, start[1] - 0.002), (end[0] + 0.001, end[1] - 0.001), 12)
-            balanced = _build_route_from_coords(alt_wps, mode)
+            balanced = _build_route_from_coords(alt_wps, mode, zones)
 
     # ── Ensure visual distinction — if any two routes are identical, nudge balanced ─
     def _coords_key(r): 
@@ -373,7 +370,7 @@ async def compute_dual_routes(
 
     if _coords_key(safest) == _coords_key(balanced):
         nudge_wps = _interpolate((start[0] - 0.002, start[1] + 0.002), (end[0] - 0.001, end[1] + 0.001), 12)
-        balanced = _build_route_from_coords(nudge_wps, mode)
+        balanced = _build_route_from_coords(nudge_wps, mode, zones)
 
     def _pack(r, label, color):
         return {
@@ -399,3 +396,4 @@ async def compute_dual_routes(
         },
     }
 
+ 
