@@ -234,15 +234,34 @@ def get_mock_incidents(location_id=None, severity=None, limit=50) -> list[dict]:
     return result
 
 def add_mock_incident(incident: dict) -> None:
+    """Synchronous add. Schedules the async persist on the running loop if any.
+
+    Race condition fix for issue #20: ``save_data`` is async (uses an
+    asyncio.Lock to serialize concurrent read-modify-write). This wrapper
+    handles both sync and async callers safely.
+    """
     MOCK_INCIDENTS.insert(0, incident)
     IN_MEMORY_REPORTS.append(incident)
-    save_data("incidents", MOCK_INCIDENTS)
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+        # We're in an async context — schedule the persist; the lock inside
+        # ``save_data`` still serializes writes.
+        loop.create_task(save_data("incidents", MOCK_INCIDENTS))
+    except RuntimeError:
+        # No running loop — safe to use asyncio.run()
+        asyncio.run(save_data("incidents", MOCK_INCIDENTS))
 
 def update_incident_verification(incident_id: str, verified: bool) -> bool:
     global MOCK_INCIDENTS
     for inc in MOCK_INCIDENTS:
         if inc.get("incident_id") == incident_id:
             inc["verified"] = verified
-            save_data("incidents", MOCK_INCIDENTS)
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(save_data("incidents", MOCK_INCIDENTS))
+            except RuntimeError:
+                asyncio.run(save_data("incidents", MOCK_INCIDENTS))
             return True
     return False

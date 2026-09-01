@@ -48,11 +48,11 @@ MOCK_USERS = _persisted_data.get("users", {
 def get_user(email: str):
     return MOCK_USERS.get(email.lower())
 
-def create_user(name: str, email: str, role: str, password: str | None = None, auth_provider: str = "password"):
+async def create_user(name: str, email: str, role: str, password: str | None = None, auth_provider: str = "password"):
     normalized_email = email.lower()
     if normalized_email in MOCK_USERS:
         return None
-        
+
     # FIX: Allow supervisor creation if called via validated endpoint
     if auth_provider == "password" and not password:
         return None
@@ -66,10 +66,10 @@ def create_user(name: str, email: str, role: str, password: str | None = None, a
         "auth_provider": auth_provider,
     }
     MOCK_USERS[normalized_email] = user
-    save_data("users", MOCK_USERS)
+    await save_data("users", MOCK_USERS)
     return user
 
-def upsert_google_user(name: str, email: str):
+async def upsert_google_user(name: str, email: str):
     normalized_email = email.lower()
     existing = MOCK_USERS.get(normalized_email)
     if existing:
@@ -79,7 +79,7 @@ def upsert_google_user(name: str, email: str):
         existing["hashed_password"] = None
         if name:
             existing["name"] = name.strip()
-        save_data("users", MOCK_USERS)
+        await save_data("users", MOCK_USERS)
         return existing
 
     user = {
@@ -91,7 +91,7 @@ def upsert_google_user(name: str, email: str):
         "auth_provider": "google",
     }
     MOCK_USERS[normalized_email] = user
-    save_data("users", MOCK_USERS)
+    await save_data("users", MOCK_USERS)
     return user
 
 def validate_supervisor_access_key(access_key: str):

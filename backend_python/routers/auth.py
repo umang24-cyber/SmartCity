@@ -71,7 +71,7 @@ def _build_auth_response(user_dict: dict):
 
 @router.post("/signup/user", response_model=LoginResponse)
 async def signup_user(request: UserSignupRequest):
-    created = create_user(
+    created = await create_user(
         name=request.name,
         email=request.email,
         role="user",
@@ -86,7 +86,7 @@ async def signup_user(request: UserSignupRequest):
 @router.post("/signup/google", response_model=LoginResponse)
 async def signup_google_user(request: GoogleSignupRequest):
     # For demo mode, token is optional and treated as pre-verified by frontend.
-    created = upsert_google_user(name=request.name, email=request.email)
+    created = await upsert_google_user(name=request.name, email=request.email)
     if not created:
         raise HTTPException(status_code=400, detail="Google signup only allowed for normal users.")
     return _build_auth_response(created)
@@ -104,7 +104,7 @@ async def signup_supervisor(request: SupervisorSignupRequest):
     if not validate_supervisor_access_key(request.access_key):
         raise HTTPException(status_code=403, detail="Invalid primary supervisor access key.")
 
-    created = create_user(
+    created = await create_user(
         name=request.name,
         email=request.email,
         role="supervisor",
@@ -119,7 +119,7 @@ async def signup_supervisor(request: SupervisorSignupRequest):
 @router.post("/signup/officer", response_model=LoginResponse)
 async def signup_officer(request: OfficerSignupRequest):
     # For now, officer signup is open like user signup, but we can add restrictions later.
-    created = create_user(
+    created = await create_user(
         name=request.name,
         email=request.email,
         role="officer",
