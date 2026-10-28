@@ -71,9 +71,59 @@
             "hashed_password": "Spiderman@2099",
             "role": "supervisor",
             "auth_provider": "password"
+        },
+        "umang@smartcity.gov": {
+            "id": "u_9fcd7da3",
+            "name": "umang",
+            "email": "umang@smartcity.gov",
+            "hashed_password": "Umangsai24",
+            "role": "officer",
+            "auth_provider": "password"
         }
     },
     "incidents": [
+        {
+            "incident_id": "SOS_2635706B",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-09-21T06:12:06.637979+00:00",
+            "source": "sos_alert",
+            "lat": 30.76832805443235,
+            "lng": 76.78635888157673,
+            "location_id": "30.7683_76.7864",
+            "verified": true
+        },
+        {
+            "incident_id": "SOS_BE6E061B",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-09-21T06:11:53.835975+00:00",
+            "source": "sos_alert",
+            "lat": 30.7333,
+            "lng": 76.7794,
+            "location_id": "30.7333_76.7794",
+            "verified": true
+        },
+        {
+            "incident_id": "SOS_FA11C7AB",
+            "text": "EMERGENCY SOS via Public Portal",
+            "severity": "critical",
+            "severity_score": 0.95,
+            "credibility": 1.0,
+            "emotion": "fear",
+            "timestamp": "2026-09-21T06:11:44.797306+00:00",
+            "source": "sos_alert",
+            "lat": 30.7333,
+            "lng": 76.7794,
+            "location_id": "30.7333_76.7794",
+            "verified": true
+        },
         {
             "incident_id": "SOS_25FC4622",
             "text": "EMERGENCY SOS via Public Portal",
